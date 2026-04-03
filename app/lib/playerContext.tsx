@@ -258,12 +258,13 @@ async function transcodeToWebM(blobUrl: string, filename: string): Promise<strin
   const { fetchFile, toBlobURL } = await import('@ffmpeg/util');
 
   if (!ffmpegInstance) {
-    ffmpegInstance = new FFmpeg();
+    const ff = new FFmpeg();
     const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-    await ffmpegInstance.load({
+    await ff.load({
       coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
       wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
     });
+    ffmpegInstance = ff; // only assign after successful load
   }
 
   const ff = ffmpegInstance;
@@ -297,10 +298,13 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
     const track = trackId ? state.tracks.find(t => t.id === trackId) : null;
     if (!track || track.error) return; // already failed or nothing loaded
 
+    // Mark as converting immediately to prevent re-entry
+    dispatch({ type: 'UPDATE_TRACK', id: track.id, patch: { error: true } });
     const toastId = toast.loading(`Converting ${track.name}…`);
     try {
       const newUrl = await transcodeToWebM(track.url, track.name);
-      dispatch({ type: 'UPDATE_TRACK', id: track.id, patch: { url: newUrl } });
+      // Clear error and set new URL on success
+      dispatch({ type: 'UPDATE_TRACK', id: track.id, patch: { url: newUrl, error: false } });
       audio.src = newUrl;
       audio.load();
       await audioCtx?.resume();
@@ -309,7 +313,7 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
     } catch {
       toast.dismiss(toastId);
       toast.error(`Could not play ${track.name} — format not supported`);
-      dispatch({ type: 'UPDATE_TRACK', id: track.id, patch: { error: true } });
+      // error: true already set above, no need to dispatch again
     }
   };
 

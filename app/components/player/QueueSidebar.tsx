@@ -19,6 +19,7 @@ import { GripVertical, X, Music } from 'lucide-react';
 
 interface SortableRowProps {
   id: string;
+  dndId: string;
   title: string;
   artist: string;
   coverUrl: string;
@@ -29,8 +30,8 @@ interface SortableRowProps {
   onPlay: (id: string) => void;
 }
 
-function SortableRow({ id, title, artist, coverUrl, duration, isCurrent, pos, onRemove, onPlay }: SortableRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, pos, onRemove, onPlay }: SortableRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: dndId });
 
   return (
     <div
@@ -86,12 +87,14 @@ export function QueueSidebar({ onClose }: QueueSidebarProps) {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
+  const dndIds = queue.map((id, pos) => `${id}::${pos}`);
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const from = queue.indexOf(active.id as string);
-    const to = queue.indexOf(over.id as string);
-    if (from !== -1 && to !== -1) reorderQueue(from, to);
+    const from = parseInt((active.id as string).split('::')[1]);
+    const to = parseInt((over.id as string).split('::')[1]);
+    if (!isNaN(from) && !isNaN(to)) reorderQueue(from, to);
   }
 
   const currentId = queue[queuePos] ?? null;
@@ -122,23 +125,24 @@ export function QueueSidebar({ onClose }: QueueSidebarProps) {
       <div className="flex-1 overflow-y-auto">
         {queue.length === 0 ? (
           <p className="text-white/20 text-xs text-center mt-8 px-4">
-            Double-click a track or right-click → Play Now
+            Click a track to play, or right-click → Play Now
           </p>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={queue} strategy={verticalListSortingStrategy}>
+            <SortableContext items={dndIds} strategy={verticalListSortingStrategy}>
               {queue.map((id, pos) => {
                 const track = tracks.find(t => t.id === id);
                 if (!track) return null;
                 return (
                   <SortableRow
-                    key={id}
+                    key={`${id}::${pos}`}
                     id={id}
+                    dndId={`${id}::${pos}`}
                     title={track.title}
                     artist={track.artist}
                     coverUrl={track.coverUrl}
                     duration={track.duration}
-                    isCurrent={id === currentId}
+                    isCurrent={pos === queuePos}
                     pos={pos}
                     onRemove={removeFromQueue}
                     onPlay={playNow}
