@@ -34,6 +34,12 @@
 | `app/components/visualizer/VisualizerLoader.tsx` | Legacy standalone loader (unused by player path) |
 | `app/components/visualizer/VisualizerContainer.tsx` | Canvas + key picker + iOS notice |
 | `app/components/visualizer/NebulaScene.tsx` | GLSL particle system — 4-shape morphing, audio-reactive |
+| `app/components/player/QueueSidebar.tsx` | dnd-kit sortable queue sidebar |
+| `app/hooks/useKeyboardShortcuts.ts` | Global keydown handler |
+| `__tests__/playerReducer.test.ts` | Pure reducer unit tests (23 cases) |
+| `__tests__/useKeyboardShortcuts.test.tsx` | Hook unit tests (12 cases) |
+| `vitest.config.ts` | Vitest config |
+| `vitest.setup.ts` | jest-dom setup |
 
 ---
 
@@ -120,27 +126,27 @@
 
 ---
 
-### Step 5 — Queue Management ❌
+### Step 5 — Queue Management 🔶
 
-- [ ] Play Now / Play Next / Add to Queue / Remove / Clear
-- [ ] Queue sidebar (accessible from Queue button in PlayerBar)
-- [ ] Auto-advance respects queue order (currently just `currentIdx + 1`)
-- [ ] Shuffle modes affect queue
-- [ ] History buffer (Previous button uses `currentIdx - 1` for now)
+- [x] Play Now / Play Next / Add to Queue / Remove / Clear
+- [x] Queue sidebar (accessible from Queue button in PlayerBar)
+- [x] Auto-advance respects queue order
+- [x] Shuffle modes affect queue (library order preserved — tracks[] never reordered)
+- [ ] History buffer (Previous decrements queuePos; 50-track circular history not yet implemented)
 
 ---
 
-### Step 6 — Keyboard Shortcuts ❌
+### Step 6 — Keyboard Shortcuts 🔶
 
 | Key | Action | Status |
 |-----|--------|--------|
-| `Space` | Play / Pause | ❌ |
-| `→` / `←` | Seek ±5s | ❌ |
-| `Shift+→` / `Shift+←` | Next / Prev track | ❌ |
-| `↑` / `↓` | Volume ±5% | ❌ |
-| `M` | Mute toggle | ❌ |
-| `L` | Cycle loop mode | ❌ |
-| `S` | Shuffle toggle | ❌ |
+| `Space` | Play / Pause | ✅ |
+| `→` / `←` | Seek ±5s | ✅ |
+| `Shift+→` / `Shift+←` | Next / Prev track | ✅ |
+| `↑` / `↓` | Volume ±5% | ✅ |
+| `M` | Mute toggle | ✅ |
+| `L` | Cycle loop mode | ✅ |
+| `S` | Shuffle toggle | ✅ |
 | `F` | Full-screen visualizer | ❌ |
 | `V` | Cycle visualizer mode | ❌ |
 | `E` | Toggle EQ panel | ❌ |
@@ -152,14 +158,14 @@
 
 ---
 
-### Step 7 — Format Support ✅ / ❌
+### Step 7 — Format Support ✅ / 🔶
 
 | Format | Status | Notes |
 |--------|--------|-------|
 | MP3, FLAC, WAV, AAC, M4A, WebM | ✅ | Browser native decode via `HTMLAudioElement` |
 | OGG, OPUS, AIFF | 🔶 | Native on Chrome/Firefox; Safari falls back — no ffmpeg.wasm yet |
-| WMA, ALAC, MKV | ❌ | Requires ffmpeg.wasm lazy-load — not implemented |
-| Error handling toast | ❌ | Bad files silently fail; no user toast |
+| WMA, ALAC, MKV | 🔶 | ffmpeg.wasm fallback wired; requires CDN load of core on demand |
+| Error handling toast | ✅ | sonner toast on decode failure |
 
 ---
 
@@ -357,7 +363,8 @@ All shortcuts listed in spec — none implemented yet.
 | `@tanstack/react-virtual` | Virtual list | ✅ |
 | `color-thief-browser` | Color extraction | ✅ (not yet used) |
 | `jsmediatags` | ID3 tags | ✅ |
-| `@dnd-kit/core` + `@dnd-kit/sortable` | Queue drag-reorder | ❌ not installed |
+| `@dnd-kit/core` + `@dnd-kit/sortable` | Queue drag-reorder | ✅ |
+| `vitest` + `@testing-library/react` | Test framework | ✅ |
 | `soundtouch-ts` | Pitch-preserving speed | ❌ not installed |
 | `essentia.js` | BPM/key/mood analysis | ❌ not installed |
 | `peerjs` | P2P sync rooms | ❌ not installed |
