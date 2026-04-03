@@ -120,4 +120,40 @@ describe('reducer — queue model', () => {
     const next = reducer(state, { type: 'PREV_TRACK' });
     expect(next.queuePos).toBe(0);
   });
+
+  it('REMOVE_FROM_QUEUE stops playback when removing currently playing track', () => {
+    const state = { ...INITIAL, queue: ['a', 'b', 'c'], queuePos: 1, playing: true };
+    const next = reducer(state, { type: 'REMOVE_FROM_QUEUE', pos: 1 });
+    expect(next.queue).toEqual(['a', 'c']);
+    expect(next.playing).toBe(false);
+    expect(next.position).toBe(0);
+  });
+
+  it('CYCLE_SHUFFLE toggling off leaves mode as off (queue stays in current order)', () => {
+    const state = { ...INITIAL, queue: ['a', 'b', 'c'], queuePos: 0, shuffleMode: 'random' as const };
+    const next = reducer(state, { type: 'CYCLE_SHUFFLE' });
+    expect(next.shuffleMode).toBe('off');
+    expect(next.queue).toEqual(['a', 'b', 'c']); // order preserved as-is
+  });
+
+  it('REORDER_QUEUE keeps queuePos pointing at same track id', () => {
+    // 'a' is at pos 0 (current). Move 'c' from pos 2 to pos 0 → 'a' shifts to pos 1
+    const state = { ...INITIAL, queue: ['a', 'b', 'c'], queuePos: 0 };
+    const next = reducer(state, { type: 'REORDER_QUEUE', from: 2, to: 0 });
+    expect(next.queue).toEqual(['c', 'a', 'b']);
+    expect(next.queuePos).toBe(1); // 'a' is now at index 1
+  });
+
+  it('PLAY_NOW resets position to 0', () => {
+    const state = { ...INITIAL, queue: ['b'], queuePos: 0, position: 45 };
+    const next = reducer(state, { type: 'PLAY_NOW', id: 'a' });
+    expect(next.position).toBe(0);
+  });
+
+  it('NEXT_TRACK wraps queue when loopMode=queue', () => {
+    const state = { ...INITIAL, queue: ['a', 'b'], queuePos: 1, loopMode: 'queue' as const };
+    const next = reducer(state, { type: 'NEXT_TRACK' });
+    expect(next.queuePos).toBe(0);
+    expect(next.playing).toBe(true);
+  });
 });

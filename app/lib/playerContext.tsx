@@ -133,6 +133,10 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
 
     case 'REMOVE_FROM_QUEUE': {
       const q = state.queue.filter((_, i) => i !== action.pos);
+      if (action.pos === state.queuePos) {
+        // Removing currently playing track — stop playback
+        return { ...state, queue: q, queuePos: q.length > 0 ? Math.min(action.pos, q.length - 1) : -1, playing: false, position: 0 };
+      }
       const qPos = action.pos < state.queuePos ? state.queuePos - 1 : state.queuePos;
       return { ...state, queue: q, queuePos: Math.min(qPos, q.length - 1) };
     }
