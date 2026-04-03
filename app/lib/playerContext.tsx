@@ -287,7 +287,12 @@ export interface PlayerContextValue {
   state: PlayerState;
   analyserNode: AnalyserNode | null;
   loadFiles: (files: FileList | File[]) => void;
-  playTrack: (idx: number) => void;
+  playNow: (id: string) => void;
+  playNext: (id: string) => void;
+  addToQueue: (id: string) => void;
+  removeFromQueue: (pos: number) => void;
+  clearQueue: () => void;
+  reorderQueue: (from: number, to: number) => void;
   togglePlay: () => void;
   seek: (seconds: number) => void;
   next: () => void;
@@ -315,10 +320,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
 
-  // ── Load / resume audio when currentIdx or playing changes ───────────────
+  // ── Load / resume audio when queue position or playing changes ────────────
   useEffect(() => {
-    if (!audioEl || state.currentIdx < 0 || state.currentIdx >= state.tracks.length) return;
-    const track = state.tracks[state.currentIdx];
+    if (!audioEl) return;
+    const id = state.queue[state.queuePos] ?? null;
+    const track = id ? state.tracks.find(t => t.id === id) ?? null : null;
+    if (!track) { audioEl.pause(); return; }
     if (audioEl.src !== track.url) {
       audioEl.src = track.url;
       audioEl.load();
@@ -329,7 +336,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } else {
       audioEl.pause();
     }
-  }, [state.currentIdx, state.playing, state.tracks]);
+  }, [state.queuePos, state.playing, state.queue, state.tracks]);
 
   // ── Volume + mute ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -375,7 +382,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     );
     if (arr.length === 0) return;
 
-    // Build tracks immediately with filename fallback, then update with tags async
     const tracks: Track[] = arr.map(f => ({
       id: `${f.name}-${f.size}`,
       name: f.name,
@@ -390,7 +396,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }));
     dispatch({ type: 'ADD_TRACKS', tracks });
 
-    // Async: extract ID3 tags and update each track
     tracks.forEach((track, i) => {
       readTags(arr[i]).then(meta => {
         const patch: Partial<Track> = {};
@@ -398,20 +403,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (meta.artist) patch.artist = meta.artist;
         if (meta.album) patch.album = meta.album;
         if (meta.coverUrl) patch.coverUrl = meta.coverUrl;
-        if (Object.keys(patch).length > 0) {
-          dispatch({ type: 'UPDATE_TRACK', id: track.id, patch });
-        }
+        if (Object.keys(patch).length > 0) dispatch({ type: 'UPDATE_TRACK', id: track.id, patch });
       });
     });
   }, []);
 
-  const playTrack = useCallback((idx: number) => {
+  const playNow = useCallback((id: string) => {
     const wasNull = !audioEl;
     ensureAudio();
     if (wasNull) attachAudioEvents(dispatch);
     if (audioCtx?.state === 'suspended') audioCtx.resume();
-    dispatch({ type: 'PLAY_IDX', idx });
+    dispatch({ type: 'PLAY_NOW', id });
   }, []);
+
+  const playNext       = useCallback((id: string) => dispatch({ type: 'PLAY_NEXT', id }), []);
+  const addToQueue     = useCallback((id: string) => dispatch({ type: 'ADD_TO_QUEUE', id }), []);
+  const removeFromQueue = useCallback((pos: number) => dispatch({ type: 'REMOVE_FROM_QUEUE', pos }), []);
+  const clearQueue     = useCallback(() => dispatch({ type: 'CLEAR_QUEUE' }), []);
+  const reorderQueue   = useCallback((from: number, to: number) => dispatch({ type: 'REORDER_QUEUE', from, to }), []);
 
   const togglePlay = useCallback(() => {
     const wasNull = !audioEl;
@@ -433,40 +442,38 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (audioEl) audioEl.currentTime = Math.max(0, seconds);
   }, []);
 
-  const next = useCallback(() => {
-    const { currentIdx, tracks } = stateRef.current;
-    if (currentIdx < tracks.length - 1) dispatch({ type: 'PLAY_IDX', idx: currentIdx + 1 });
-  }, []);
+  const next = useCallback(() => dispatch({ type: 'NEXT_TRACK' }), []);
 
   const prev = useCallback(() => {
-    const { currentIdx } = stateRef.current;
-    if (currentIdx > 0) dispatch({ type: 'PLAY_IDX', idx: currentIdx - 1 });
-    else if (audioEl) audioEl.currentTime = 0;
+    const { queuePos } = stateRef.current;
+    if (queuePos > 0) {
+      dispatch({ type: 'PREV_TRACK' });
+    } else if (audioEl) {
+      audioEl.currentTime = 0;
+    }
   }, []);
 
-  const setVolume    = useCallback((v: number) => dispatch({ type: 'SET_VOLUME', volume: v }), []);
-  const toggleMute   = useCallback(() => dispatch({ type: 'TOGGLE_MUTE' }), []);
-  const setSpeed     = useCallback((s: number) => dispatch({ type: 'SET_SPEED', speed: s }), []);
-  const setLoopA     = useCallback(() => {
-    if (audioEl) dispatch({ type: 'SET_LOOP_A', a: audioEl.currentTime });
-  }, []);
-  const setLoopB     = useCallback(() => {
-    if (audioEl) dispatch({ type: 'SET_LOOP_B', b: audioEl.currentTime });
-  }, []);
-  const setLoopAAt   = useCallback((s: number) => dispatch({ type: 'SET_LOOP_A', a: s }), []);
-  const setLoopBAt   = useCallback((s: number) => dispatch({ type: 'SET_LOOP_B', b: s }), []);
-  const toggleLoop   = useCallback(() => dispatch({ type: 'TOGGLE_LOOP' }), []);
-  const clearLoop    = useCallback(() => dispatch({ type: 'CLEAR_LOOP' }), []);
-  const cycleShuffle = useCallback(() => dispatch({ type: 'CYCLE_SHUFFLE' }), []);
+  const setVolume     = useCallback((v: number) => dispatch({ type: 'SET_VOLUME', volume: v }), []);
+  const toggleMute    = useCallback(() => dispatch({ type: 'TOGGLE_MUTE' }), []);
+  const setSpeed      = useCallback((s: number) => dispatch({ type: 'SET_SPEED', speed: s }), []);
+  const setLoopA      = useCallback(() => { if (audioEl) dispatch({ type: 'SET_LOOP_A', a: audioEl.currentTime }); }, []);
+  const setLoopB      = useCallback(() => { if (audioEl) dispatch({ type: 'SET_LOOP_B', b: audioEl.currentTime }); }, []);
+  const setLoopAAt    = useCallback((s: number) => dispatch({ type: 'SET_LOOP_A', a: s }), []);
+  const setLoopBAt    = useCallback((s: number) => dispatch({ type: 'SET_LOOP_B', b: s }), []);
+  const toggleLoop    = useCallback(() => dispatch({ type: 'TOGGLE_LOOP' }), []);
+  const clearLoop     = useCallback(() => dispatch({ type: 'CLEAR_LOOP' }), []);
+  const cycleShuffle  = useCallback(() => dispatch({ type: 'CYCLE_SHUFFLE' }), []);
   const cycleLoopMode = useCallback(() => dispatch({ type: 'CYCLE_LOOP_MODE' }), []);
-  const setKey       = useCallback((k: number) => dispatch({ type: 'SET_KEY', key: k }), []);
+  const setKey        = useCallback((k: number) => dispatch({ type: 'SET_KEY', key: k }), []);
 
   return (
     <PlayerContext.Provider value={{
       state,
       analyserNode: _analyserNode,
-      loadFiles, playTrack, togglePlay, seek,
-      next, prev, setVolume, toggleMute, setSpeed,
+      loadFiles,
+      playNow, playNext, addToQueue, removeFromQueue, clearQueue, reorderQueue,
+      togglePlay, seek, next, prev,
+      setVolume, toggleMute, setSpeed,
       setLoopA, setLoopB, setLoopAAt, setLoopBAt, toggleLoop, clearLoop,
       cycleShuffle, cycleLoopMode, setKey,
     }}>

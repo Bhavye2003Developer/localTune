@@ -31,13 +31,14 @@ export function PlayerBar({ libOpen, onToggleLib }: PlayerBarProps) {
   } = usePlayer();
 
   const {
-    tracks, currentIdx, playing,
+    tracks, queue, queuePos, playing,
     position, duration, volume, muted, speed,
     loopA, loopB, loopActive,
     shuffleMode, loopMode,
   } = state;
 
-  const track = currentIdx >= 0 ? tracks[currentIdx] : null;
+  const currentId = queue[queuePos] ?? null;
+  const track = currentId ? tracks.find(t => t.id === currentId) ?? null : null;
   const progressRef = useRef<HTMLDivElement>(null);
   const fillRef     = useRef<HTMLDivElement>(null);
   const thumbRef    = useRef<HTMLDivElement>(null);
