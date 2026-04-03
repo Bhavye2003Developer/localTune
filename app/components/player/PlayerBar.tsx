@@ -14,6 +14,8 @@ const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 interface PlayerBarProps {
   libOpen: boolean;
   onToggleLib: () => void;
+  queueOpen: boolean;
+  onToggleQueue: () => void;
 }
 
 function LoopIcon({ mode }: { mode: LoopMode }) {
@@ -21,7 +23,7 @@ function LoopIcon({ mode }: { mode: LoopMode }) {
   return <Repeat size={15} />;
 }
 
-export function PlayerBar({ libOpen, onToggleLib }: PlayerBarProps) {
+export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: PlayerBarProps) {
   const {
     state,
     togglePlay, seek, next, prev,
@@ -330,10 +332,13 @@ export function PlayerBar({ libOpen, onToggleLib }: PlayerBarProps) {
           {speedLabel}
         </button>
 
-        {/* Queue placeholder */}
+        {/* Queue toggle */}
         <button
-          title="Queue (coming soon)"
-          className="p-1.5 rounded text-white/25 hover:text-white/50 transition-colors flex-shrink-0"
+          onClick={onToggleQueue}
+          title="Queue"
+          className={`p-1.5 rounded transition-colors flex-shrink-0 ${
+            queueOpen ? 'text-cyan-400 bg-cyan-400/10' : 'text-white/35 hover:text-white/70'
+          }`}
         >
           <ListMusic size={15} />
         </button>
