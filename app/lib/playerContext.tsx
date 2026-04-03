@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import jsmediatags from 'jsmediatags';
+import { toast } from 'sonner';
 
 // ─── Track type ───────────────────────────────────────────────────────────────
 
@@ -248,17 +249,74 @@ function ensureAudio() {
   gainNode.connect(audioCtx.destination);
 }
 
+// ─── FFmpeg lazy loader ───────────────────────────────────────────────────────
+
+let ffmpegInstance: import('@ffmpeg/ffmpeg').FFmpeg | null = null;
+
+async function transcodeToWebM(blobUrl: string, filename: string): Promise<string> {
+  const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+  const { fetchFile, toBlobURL } = await import('@ffmpeg/util');
+
+  if (!ffmpegInstance) {
+    ffmpegInstance = new FFmpeg();
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    await ffmpegInstance.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+  }
+
+  const ff = ffmpegInstance;
+  const ext = filename.split('.').pop() ?? 'bin';
+  const inputName = `input_${Date.now()}.${ext}`;
+  const outputName = `output_${Date.now()}.webm`;
+
+  await ff.writeFile(inputName, await fetchFile(blobUrl));
+  await ff.exec(['-i', inputName, '-c:a', 'libopus', '-b:a', '128k', outputName]);
+  const data = await ff.readFile(outputName);
+
+  await ff.deleteFile(inputName);
+  await ff.deleteFile(outputName);
+
+  return URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: 'audio/webm' }));
+}
+
 // Attach DOM events once, right after audioEl is created.
 // Must receive dispatch since this runs outside React.
-function attachAudioEvents(dispatch: React.Dispatch<Action>) {
+function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => PlayerState) {
   if (!audioEl) return;
   const audio = audioEl;
+
   const onTime = () =>
     dispatch({ type: 'TICK', position: audio.currentTime, duration: audio.duration || 0 });
   const onEnded = () => dispatch({ type: 'TRACK_ENDED' });
+
+  const onError = async () => {
+    const state = getState();
+    const trackId = state.queue[state.queuePos];
+    const track = trackId ? state.tracks.find(t => t.id === trackId) : null;
+    if (!track || track.error) return; // already failed or nothing loaded
+
+    const toastId = toast.loading(`Converting ${track.name}…`);
+    try {
+      const newUrl = await transcodeToWebM(track.url, track.name);
+      dispatch({ type: 'UPDATE_TRACK', id: track.id, patch: { url: newUrl } });
+      audio.src = newUrl;
+      audio.load();
+      await audioCtx?.resume();
+      await audio.play();
+      toast.dismiss(toastId);
+    } catch {
+      toast.dismiss(toastId);
+      toast.error(`Could not play ${track.name} — format not supported`);
+      dispatch({ type: 'UPDATE_TRACK', id: track.id, patch: { error: true } });
+    }
+  };
+
   audio.addEventListener('timeupdate', onTime);
   audio.addEventListener('loadedmetadata', onTime);
   audio.addEventListener('ended', onEnded);
+  audio.addEventListener('error', onError);
 }
 
 // ─── ID3 metadata extraction ──────────────────────────────────────────────────
@@ -319,6 +377,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, INITIAL);
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
+  const getState = () => stateRef.current;
 
   // ── Load / resume audio when queue position or playing changes ────────────
   useEffect(() => {
@@ -375,7 +434,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const loadFiles = useCallback((files: FileList | File[]) => {
     const wasNull = !audioEl;
     ensureAudio();
-    if (wasNull) attachAudioEvents(dispatch);
+    if (wasNull) attachAudioEvents(dispatch, getState);
     if (audioCtx?.state === 'suspended') audioCtx.resume();
     const arr = Array.from(files).filter(
       f => f.type.startsWith('audio/') || f.type.startsWith('video/')
@@ -411,7 +470,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const playNow = useCallback((id: string) => {
     const wasNull = !audioEl;
     ensureAudio();
-    if (wasNull) attachAudioEvents(dispatch);
+    if (wasNull) attachAudioEvents(dispatch, getState);
     if (audioCtx?.state === 'suspended') audioCtx.resume();
     dispatch({ type: 'PLAY_NOW', id });
   }, []);
@@ -425,7 +484,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const togglePlay = useCallback(() => {
     const wasNull = !audioEl;
     ensureAudio();
-    if (wasNull) attachAudioEvents(dispatch);
+    if (wasNull) attachAudioEvents(dispatch, getState);
     if (!audioEl) return;
     const playing = stateRef.current.playing;
     if (playing) {

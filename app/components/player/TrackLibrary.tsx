@@ -91,6 +91,9 @@ export function TrackLibrary() {
                     {formatTime(track.duration)}
                   </span>
                 )}
+                {track.error && (
+                  <span className="text-[9px] text-red-400 bg-red-400/10 px-1 rounded ml-1 flex-shrink-0">ERR</span>
+                )}
               </div>
             );
           })}
