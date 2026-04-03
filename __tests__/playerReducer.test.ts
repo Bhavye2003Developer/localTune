@@ -127,6 +127,7 @@ describe('reducer — queue model', () => {
     expect(next.queue).toEqual(['a', 'c']);
     expect(next.playing).toBe(false);
     expect(next.position).toBe(0);
+    expect(next.queuePos).toBe(1); // 'c' slides into slot 1 after 'b' removed
   });
 
   it('CYCLE_SHUFFLE toggling off leaves mode as off (queue stays in current order)', () => {
@@ -155,5 +156,26 @@ describe('reducer — queue model', () => {
     const next = reducer(state, { type: 'NEXT_TRACK' });
     expect(next.queuePos).toBe(0);
     expect(next.playing).toBe(true);
+  });
+
+  it('CLEAR_QUEUE empties queue, sets queuePos -1, stops playback', () => {
+    const state = { ...INITIAL, queue: ['a', 'b'], queuePos: 0, playing: true };
+    const next = reducer(state, { type: 'CLEAR_QUEUE' });
+    expect(next.queue).toEqual([]);
+    expect(next.queuePos).toBe(-1);
+    expect(next.playing).toBe(false);
+  });
+
+  it('PLAY_NEXT inserts at index 0 when queuePos is -1 (idle)', () => {
+    const state = { ...INITIAL, queue: ['a', 'b'], queuePos: -1 };
+    const next = reducer(state, { type: 'PLAY_NEXT', id: 'x' });
+    expect(next.queue).toEqual(['x', 'a', 'b']); // inserted at front when idle
+    expect(next.queuePos).toBe(-1); // still idle — no auto-play
+  });
+
+  it('NEXT_TRACK on empty queue stops playback', () => {
+    const state = { ...INITIAL, queue: [], queuePos: -1 };
+    const next = reducer(state, { type: 'NEXT_TRACK' });
+    expect(next.playing).toBe(false);
   });
 });

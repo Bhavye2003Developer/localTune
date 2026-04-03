@@ -200,6 +200,8 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
         const newQueue = currentId ? [currentId, ...shuffled] : shuffled;
         return { ...state, shuffleMode: 'random', queue: newQueue, queuePos: currentId ? 0 : state.queuePos };
       }
+      // Turning shuffle off keeps the queue in its current (shuffled) order.
+      // Restoring the original order would require storing a pre-shuffle snapshot — not in V1 scope.
       return { ...state, shuffleMode: 'off' };
     }
 
