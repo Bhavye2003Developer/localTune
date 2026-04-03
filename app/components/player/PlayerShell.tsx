@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PlayerProvider, usePlayer } from '../../lib/playerContext';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { VisualizerContainer } from '../visualizer/VisualizerContainer';
 import { FileDropZone } from './FileDropZone';
 import { TrackLibrary } from './TrackLibrary';
@@ -12,6 +13,7 @@ function PlayerInner() {
   const { state, analyserNode, setKey } = usePlayer();
   const [libOpen, setLibOpen] = useState(true); // open by default when empty
   const [queueOpen, setQueueOpen] = useState(false);
+  useKeyboardShortcuts();
 
   // Auto-close library once tracks are playing and user hasn't pinned it
   const showLib = libOpen || state.tracks.length === 0;
