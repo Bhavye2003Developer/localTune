@@ -1,15 +1,27 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Music, Play } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
 
 export function TrackLibrary() {
-  const { state, playNow } = usePlayer();
+  const { state, playNow, playNext, addToQueue } = usePlayer();
   const { tracks, queue, queuePos, playing } = state;
   const currentId = queue[queuePos] ?? null;
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const [menu, setMenu] = useState<{ visible: boolean; x: number; y: number; trackId: string }>({
+    visible: false, x: 0, y: 0, trackId: '',
+  });
+
+  const closeMenu = useCallback(() => setMenu(m => ({ ...m, visible: false })), []);
+
+  useEffect(() => {
+    if (!menu.visible) return;
+    window.addEventListener('pointerdown', closeMenu);
+    return () => window.removeEventListener('pointerdown', closeMenu);
+  }, [menu.visible, closeMenu]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
@@ -42,6 +54,10 @@ export function TrackLibrary() {
                   height: vItem.size,
                 }}
                 onClick={() => playNow(track.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ visible: true, x: e.clientX, y: e.clientY, trackId: track.id });
+                }}
                 className={`flex items-center gap-2.5 px-3 cursor-pointer transition-colors group
                   ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
               >
@@ -80,6 +96,31 @@ export function TrackLibrary() {
           })}
         </div>
       </div>
+      {menu.visible && (
+        <div
+          className="fixed z-50 bg-black/90 border border-white/15 rounded-lg py-1 shadow-xl"
+          style={{ left: menu.x, top: menu.y }}
+        >
+          <button
+            className="block w-full px-4 py-1.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+            onPointerDown={e => { e.stopPropagation(); playNow(menu.trackId); closeMenu(); }}
+          >
+            Play Now
+          </button>
+          <button
+            className="block w-full px-4 py-1.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+            onPointerDown={e => { e.stopPropagation(); playNext(menu.trackId); closeMenu(); }}
+          >
+            Play Next
+          </button>
+          <button
+            className="block w-full px-4 py-1.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+            onPointerDown={e => { e.stopPropagation(); addToQueue(menu.trackId); closeMenu(); }}
+          >
+            Add to Queue
+          </button>
+        </div>
+      )}
     </div>
   );
 }
