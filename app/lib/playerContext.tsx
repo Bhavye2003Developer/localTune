@@ -14,16 +14,17 @@ import jsmediatags from 'jsmediatags';
 // ─── Track type ───────────────────────────────────────────────────────────────
 
 export interface Track {
-  id: string;          // `${name}-${size}`
-  name: string;        // original filename
-  title: string;       // display name (parsed from tags or filename)
-  artist: string;      // from ID3 tags or empty string
-  album: string;       // from ID3 tags or empty string
+  id: string;
+  name: string;
+  title: string;
+  artist: string;
+  album: string;
   size: number;
   type: string;
-  url: string;         // objectURL — revoked when track is removed
-  coverUrl: string;    // objectURL for cover art, '' if none
-  duration: number;    // populated from loadedmetadata
+  url: string;
+  coverUrl: string;
+  duration: number;
+  error?: boolean;
 }
 
 // ─── Shuffle / loop modes ─────────────────────────────────────────────────────
@@ -31,11 +32,12 @@ export interface Track {
 export type ShuffleMode = 'off' | 'random';
 export type LoopMode = 'off' | 'track' | 'queue';
 
-// ─── State & actions ──────────────────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────────────────────────
 
-interface PlayerState {
+export interface PlayerState {
   tracks: Track[];
-  currentIdx: number;
+  queue: string[];
+  queuePos: number;
   playing: boolean;
   position: number;
   duration: number;
@@ -50,9 +52,10 @@ interface PlayerState {
   musicalKey: number;
 }
 
-const INITIAL: PlayerState = {
+export const INITIAL: PlayerState = {
   tracks: [],
-  currentIdx: -1,
+  queue: [],
+  queuePos: -1,
   playing: false,
   position: 0,
   duration: 0,
@@ -67,10 +70,19 @@ const INITIAL: PlayerState = {
   musicalKey: 8,
 };
 
+// ─── Actions ──────────────────────────────────────────────────────────────────
+
 type Action =
   | { type: 'ADD_TRACKS'; tracks: Track[] }
   | { type: 'UPDATE_TRACK'; id: string; patch: Partial<Track> }
-  | { type: 'PLAY_IDX'; idx: number }
+  | { type: 'PLAY_NOW'; id: string }
+  | { type: 'PLAY_NEXT'; id: string }
+  | { type: 'ADD_TO_QUEUE'; id: string }
+  | { type: 'REMOVE_FROM_QUEUE'; pos: number }
+  | { type: 'CLEAR_QUEUE' }
+  | { type: 'REORDER_QUEUE'; from: number; to: number }
+  | { type: 'NEXT_TRACK' }
+  | { type: 'PREV_TRACK' }
   | { type: 'SET_PLAYING'; playing: boolean }
   | { type: 'TICK'; position: number; duration: number }
   | { type: 'SET_VOLUME'; volume: number }
@@ -85,7 +97,7 @@ type Action =
   | { type: 'SET_KEY'; key: number }
   | { type: 'TRACK_ENDED' };
 
-function shuffle<T>(arr: T[]): T[] {
+function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -94,68 +106,117 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function reducer(state: PlayerState, action: Action): PlayerState {
+export function reducer(state: PlayerState, action: Action): PlayerState {
   switch (action.type) {
-    case 'ADD_TRACKS': {
-      const wasEmpty = state.currentIdx === -1;
-      return {
-        ...state,
-        tracks: [...state.tracks, ...action.tracks],
-        currentIdx: wasEmpty ? 0 : state.currentIdx,
-      };
-    }
+
+    case 'ADD_TRACKS':
+      return { ...state, tracks: [...state.tracks, ...action.tracks] };
+
     case 'UPDATE_TRACK':
       return {
         ...state,
-        tracks: state.tracks.map(t =>
-          t.id === action.id ? { ...t, ...action.patch } : t
-        ),
+        tracks: state.tracks.map(t => t.id === action.id ? { ...t, ...action.patch } : t),
       };
-    case 'PLAY_IDX':
-      return { ...state, currentIdx: action.idx, playing: true, position: 0 };
+
+    case 'PLAY_NOW':
+      return { ...state, queue: [action.id], queuePos: 0, playing: true, position: 0 };
+
+    case 'PLAY_NEXT': {
+      const insertAt = state.queuePos + 1;
+      const q = [...state.queue];
+      q.splice(insertAt, 0, action.id);
+      return { ...state, queue: q };
+    }
+
+    case 'ADD_TO_QUEUE':
+      return { ...state, queue: [...state.queue, action.id] };
+
+    case 'REMOVE_FROM_QUEUE': {
+      const q = state.queue.filter((_, i) => i !== action.pos);
+      const qPos = action.pos < state.queuePos ? state.queuePos - 1 : state.queuePos;
+      return { ...state, queue: q, queuePos: Math.min(qPos, q.length - 1) };
+    }
+
+    case 'CLEAR_QUEUE':
+      return { ...state, queue: [], queuePos: -1, playing: false };
+
+    case 'REORDER_QUEUE': {
+      const q = [...state.queue];
+      const [item] = q.splice(action.from, 1);
+      q.splice(action.to, 0, item);
+      const currentId = state.queue[state.queuePos];
+      const newPos = currentId ? q.indexOf(currentId) : state.queuePos;
+      return { ...state, queue: q, queuePos: newPos };
+    }
+
+    case 'NEXT_TRACK': {
+      const next = state.queuePos + 1;
+      if (next < state.queue.length) return { ...state, queuePos: next, playing: true, position: 0 };
+      if (state.loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0 };
+      return { ...state, playing: false };
+    }
+
+    case 'PREV_TRACK': {
+      if (state.queuePos > 0) return { ...state, queuePos: state.queuePos - 1, playing: true, position: 0 };
+      return state;
+    }
+
     case 'SET_PLAYING':
       return { ...state, playing: action.playing };
+
     case 'TICK':
       return { ...state, position: action.position, duration: action.duration };
+
     case 'SET_VOLUME':
       return { ...state, volume: action.volume };
+
     case 'TOGGLE_MUTE':
       return { ...state, muted: !state.muted };
+
     case 'SET_SPEED':
       return { ...state, speed: action.speed };
+
     case 'SET_LOOP_A':
       return { ...state, loopA: action.a };
+
     case 'SET_LOOP_B':
       return { ...state, loopB: action.b };
+
     case 'TOGGLE_LOOP':
       return { ...state, loopActive: !state.loopActive };
+
     case 'CLEAR_LOOP':
       return { ...state, loopA: null, loopB: null, loopActive: false };
-    case 'CYCLE_SHUFFLE':
-      return {
-        ...state,
-        shuffleMode: state.shuffleMode === 'off' ? 'random' : 'off',
-        // Reshuffle track order when enabling shuffle
-        tracks: state.shuffleMode === 'off'
-          ? shuffle(state.tracks)
-          : state.tracks,
-        currentIdx: state.shuffleMode === 'off' ? 0 : state.currentIdx,
-      };
+
+    case 'CYCLE_SHUFFLE': {
+      if (state.shuffleMode === 'off') {
+        const currentId = state.queue[state.queuePos];
+        const rest = state.queue.filter((_, i) => i !== state.queuePos);
+        const shuffled = shuffleArr(rest);
+        const newQueue = currentId ? [currentId, ...shuffled] : shuffled;
+        return { ...state, shuffleMode: 'random', queue: newQueue, queuePos: currentId ? 0 : state.queuePos };
+      }
+      return { ...state, shuffleMode: 'off' };
+    }
+
     case 'CYCLE_LOOP_MODE': {
       const modes: LoopMode[] = ['off', 'track', 'queue'];
       const next = modes[(modes.indexOf(state.loopMode) + 1) % modes.length];
       return { ...state, loopMode: next };
     }
+
     case 'SET_KEY':
       return { ...state, musicalKey: action.key };
+
     case 'TRACK_ENDED': {
-      const { loopMode, currentIdx, tracks } = state;
+      const { loopMode, queuePos, queue } = state;
       if (loopMode === 'track') return { ...state, playing: true, position: 0 };
-      const next = currentIdx + 1;
-      if (next < tracks.length) return { ...state, currentIdx: next, playing: true, position: 0 };
-      if (loopMode === 'queue') return { ...state, currentIdx: 0, playing: true, position: 0 };
+      const next = queuePos + 1;
+      if (next < queue.length) return { ...state, queuePos: next, playing: true, position: 0 };
+      if (loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0 };
       return { ...state, playing: false };
     }
+
     default:
       return state;
   }
