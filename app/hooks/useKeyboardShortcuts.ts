@@ -1,14 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePlayer, getAudioEl } from '../lib/playerContext';
 
 export function useKeyboardShortcuts() {
-  const { togglePlay, seek, next, prev, setVolume, toggleMute, cycleLoopMode, cycleShuffle, state } = usePlayer();
+  const player = usePlayer();
+
+  // Keep a ref to the latest player value so the keydown handler never goes stale.
+  const playerRef = useRef(player);
+  useEffect(() => { playerRef.current = player; });
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
 
+      const { togglePlay, seek, next, prev, setVolume, toggleMute, cycleLoopMode, cycleShuffle, state } = playerRef.current;
       const el = getAudioEl();
       const currentTime = el?.currentTime ?? 0;
       const { volume } = state;
@@ -50,6 +55,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.volume]);
+  }, []); // registers once — playerRef always holds latest values
 }
