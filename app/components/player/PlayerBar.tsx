@@ -9,7 +9,7 @@ import {
 import { usePlayer, formatTime, getAudioEl } from '../../lib/playerContext';
 import type { LoopMode } from '../../lib/playerContext';
 
-const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
 interface PlayerBarProps {
   libOpen: boolean;
@@ -131,7 +131,7 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: Pl
     setSpeed(SPEEDS[(idx + 1) % SPEEDS.length]);
   };
 
-  const speedLabel = speed === 1 ? '1×' : `${speed}×`;
+  const speedLabel = `${speed}×`;
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-30 bg-black/75 backdrop-blur-xl border-t border-white/8">
