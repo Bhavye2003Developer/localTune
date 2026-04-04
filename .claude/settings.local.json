@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(npx next:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm run:*)",
+      "Bash(git commit:*)",
+      "Bash(git -C /c/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks show edc38a9:app/lib/playerContext.tsx)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks log --oneline -1)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks diff a6ad6e64e2e225a251ab057bb6cc64bbbe3b241e HEAD --stat)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks diff a6ad6e64e2e225a251ab057bb6cc64bbbe3b241e HEAD)",
+      "Bash(npx jest:*)",
+      "Bash(npm test:*)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks diff a6ad6e64e2e225a251ab057bb6cc64bbbe3b241e..HEAD --stat)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks diff a6ad6e64e2e225a251ab057bb6cc64bbbe3b241e..HEAD)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks log --oneline -5)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks show 7bdb962 --stat)",
+      "Bash(git -C c:/Users/Bhavye/Desktop/finetune/.worktrees/partial-tasks show 7bdb962 -- app/lib/playerContext.tsx)"
+    ]
+  }
+}

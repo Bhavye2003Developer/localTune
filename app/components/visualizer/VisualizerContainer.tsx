@@ -26,6 +26,7 @@ export const VisualizerContainer = memo(function VisualizerContainer({ analyserN
   // Lazy initializer — runs once on mount (client-only), avoids setState-in-effect
   const [ios] = useState(() => isIOS());
   const [albumColor, setAlbumColor] = useState<THREE.Color | null>(null);
+  const [keyPickerOpen, setKeyPickerOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -91,23 +92,36 @@ export const VisualizerContainer = memo(function VisualizerContainer({ analyserN
         </Canvas>
 
         {/* ── Musical key picker ────────────────────────────────── */}
-        <div className="absolute top-4 right-4 flex flex-col items-center gap-1.5">
-          <span className="text-white/30 text-[10px] tracking-widest uppercase">Key</span>
-          <div className="grid grid-cols-6 gap-1">
-            {KEY_NAMES.map((note, i) => (
-              <button
-                key={note}
-                onClick={() => setMusicalKey(i)}
-                title={note}
-                className={`w-7 h-7 rounded text-[10px] font-mono font-semibold transition-all ${
-                  musicalKey === i
-                    ? 'bg-white text-black scale-110'
-                    : 'bg-white/8 text-white/40 hover:bg-white/18 hover:text-white/70'
-                }`}
-              >
-                {note}
-              </button>
-            ))}
+        {/* Desktop: always visible grid. Mobile: toggle button → grid overlay */}
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+          {/* Toggle button — visible on mobile only */}
+          <button
+            onClick={() => setKeyPickerOpen(o => !o)}
+            className={`sm:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-all
+              ${keyPickerOpen ? 'bg-white text-black' : 'bg-black/60 text-white/60 border border-white/20'}`}
+          >
+            Key: {KEY_NAMES[musicalKey]}
+          </button>
+
+          {/* Grid — always shown on sm+, conditionally on mobile */}
+          <div className={`flex-col items-center gap-1.5 ${keyPickerOpen ? 'flex' : 'hidden sm:flex'}`}>
+            <span className="text-white/30 text-[10px] tracking-widest uppercase hidden sm:block">Key</span>
+            <div className="grid grid-cols-6 gap-1 bg-black/60 sm:bg-transparent rounded-xl p-2 sm:p-0 backdrop-blur-sm sm:backdrop-blur-none">
+              {KEY_NAMES.map((note, i) => (
+                <button
+                  key={note}
+                  onClick={() => { setMusicalKey(i); setKeyPickerOpen(false); }}
+                  title={note}
+                  className={`w-8 h-8 sm:w-7 sm:h-7 rounded text-[10px] font-mono font-semibold transition-all touch-manipulation ${
+                    musicalKey === i
+                      ? 'bg-white text-black scale-110'
+                      : 'bg-white/8 text-white/40 hover:bg-white/18 hover:text-white/70'
+                  }`}
+                >
+                  {note}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

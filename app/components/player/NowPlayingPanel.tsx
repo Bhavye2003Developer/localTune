@@ -64,7 +64,7 @@ export function NowPlayingPanel({ track, onClose }: Props) {
       onPointerDown={onClose}
     >
       <div
-        className="relative rounded-2xl overflow-hidden w-72 shadow-2xl border border-white/10"
+        className="relative rounded-none sm:rounded-2xl overflow-hidden w-full sm:w-80 max-h-full overflow-y-auto shadow-2xl border-0 sm:border border-white/10"
         style={{ background: bgColor || 'rgba(10,10,10,0.97)' }}
         onPointerDown={e => e.stopPropagation()}
       >

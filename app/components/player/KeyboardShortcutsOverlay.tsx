@@ -42,7 +42,7 @@ export function KeyboardShortcutsOverlay({ onClose }: Props) {
       onPointerDown={onClose}
     >
       <div
-        className="relative bg-black/90 border border-white/12 rounded-2xl px-6 py-5 w-80 shadow-2xl"
+        className="relative bg-black/90 border border-white/12 rounded-2xl px-6 py-5 w-full mx-4 sm:w-80 shadow-2xl max-h-[80vh] overflow-y-auto"
         onPointerDown={e => e.stopPropagation()}
       >
         <button

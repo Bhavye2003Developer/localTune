@@ -21,17 +21,16 @@ function PlayerInner() {
   const [eqOpen, setEqOpen] = useState(false);
   const searchRef = useRef<TrackLibraryHandle>(null);
 
-  // Stable callbacks — don't recreate on every render
-  const handleToggleLib      = useCallback(() => setLibOpen(o => !o), []);
-  const handleToggleQueue    = useCallback(() => setQueueOpen(o => !o), []);
-  const handleOpenNowPlaying = useCallback(() => setNowPlayingOpen(true), []);
+  const handleToggleLib       = useCallback(() => setLibOpen(o => !o), []);
+  const handleToggleQueue     = useCallback(() => setQueueOpen(o => !o), []);
+  const handleOpenNowPlaying  = useCallback(() => setNowPlayingOpen(true), []);
   const handleCloseNowPlaying = useCallback(() => setNowPlayingOpen(false), []);
-  const handleOpenShortcuts  = useCallback(() => setShortcutsOpen(true), []);
-  const handleCloseShortcuts = useCallback(() => setShortcutsOpen(false), []);
-  const handleToggleEQ       = useCallback(() => setEqOpen(o => !o), []);
-  const handleCloseEQ        = useCallback(() => setEqOpen(false), []);
-  const handleCloseQueue     = useCallback(() => setQueueOpen(false), []);
-  const handleFocusSearch    = useCallback(() => searchRef.current?.focusSearch(), []);
+  const handleOpenShortcuts   = useCallback(() => setShortcutsOpen(true), []);
+  const handleCloseShortcuts  = useCallback(() => setShortcutsOpen(false), []);
+  const handleToggleEQ        = useCallback(() => setEqOpen(o => !o), []);
+  const handleCloseEQ         = useCallback(() => setEqOpen(false), []);
+  const handleCloseQueue      = useCallback(() => setQueueOpen(false), []);
+  const handleFocusSearch     = useCallback(() => searchRef.current?.focusSearch(), []);
 
   useKeyboardShortcuts({
     onOpenShortcuts: handleOpenShortcuts,
@@ -41,76 +40,92 @@ function PlayerInner() {
 
   const showLib = libOpen || state.tracks.length === 0;
   const currentId = state.queue[state.queuePos] ?? null;
-
-  // Avoid linear search on every render — only recompute when queue position or tracks change
   const currentTrack = useMemo(
     () => (currentId ? state.tracks.find(t => t.id === currentId) ?? null : null),
     [currentId, state.tracks]
   );
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-black">
-      {/* ── Full-screen visualizer ──────────────────────────────────────────── */}
-      <div className="absolute inset-0">
-        <VisualizerContainer
-          analyserNode={analyserNode}
-          musicalKey={state.musicalKey}
-          onKeyChange={setKey}
-          vizMode={state.vizMode}
-          coverUrl={currentTrack?.coverUrl ?? ''}
-        />
-      </div>
-
-      {/* ── Library panel ───────────────────────────────────────────────────── */}
-      {showLib && (
-        <div className="absolute left-0 top-0 bottom-14 w-72 bg-black/80 backdrop-blur-xl border-r border-white/8 flex flex-col z-20 select-none">
-          <div className="px-3 pt-3 pb-1 text-white/60 text-xs font-semibold tracking-wide">
-            Library
-          </div>
-          <FileDropZone />
-          <TrackLibrary ref={searchRef} />
+    <div className="relative w-screen h-screen overflow-hidden bg-black flex flex-col">
+      {/* ── Full-screen visualizer (grows to fill space above bottom bar) ── */}
+      <div className="flex-1 relative min-h-0">
+        <div className="absolute inset-0">
+          <VisualizerContainer
+            analyserNode={analyserNode}
+            musicalKey={state.musicalKey}
+            onKeyChange={setKey}
+            vizMode={state.vizMode}
+            coverUrl={currentTrack?.coverUrl ?? ''}
+          />
         </div>
-      )}
 
-      {/* ── Queue sidebar ────────────────────────────────────────────────────── */}
-      {queueOpen && <QueueSidebar onClose={handleCloseQueue} />}
+        {/* ── Library panel
+             Mobile: full-screen overlay over the visualizer
+             Desktop sm+: left panel 288px wide                                  ── */}
+        {showLib && (
+          <div className="
+            absolute left-0 top-0 bottom-0 z-20
+            flex flex-col select-none
+            bg-black/90 backdrop-blur-xl border-r border-white/8
+            w-full sm:w-72
+          ">
+            <div className="px-3 pt-3 pb-1 text-white/60 text-xs font-semibold tracking-wide">
+              Library
+            </div>
+            <FileDropZone />
+            <TrackLibrary ref={searchRef} />
+          </div>
+        )}
 
-      {/* ── Now Playing panel ───────────────────────────────────────────────── */}
-      {nowPlayingOpen && currentTrack && (
-        <NowPlayingPanel track={currentTrack} onClose={handleCloseNowPlaying} />
-      )}
+        {/* ── Queue sidebar
+             Mobile: full-screen overlay
+             Desktop: right panel 288px                                           ── */}
+        {queueOpen && <QueueSidebar onClose={handleCloseQueue} />}
 
-      {/* ── Keyboard shortcuts overlay ──────────────────────────────────────── */}
-      {shortcutsOpen && (
-        <KeyboardShortcutsOverlay onClose={handleCloseShortcuts} />
-      )}
+        {/* ── Now Playing panel ── */}
+        {nowPlayingOpen && currentTrack && (
+          <NowPlayingPanel track={currentTrack} onClose={handleCloseNowPlaying} />
+        )}
 
-      {/* ── EQ drawer — slides up above PlayerBar ────────────────────────────── */}
-      <div
-        className={`absolute left-0 right-0 z-30 bg-black/85 backdrop-blur-xl border-t border-white/8 overflow-hidden transition-all duration-200 ease-in-out ${
-          eqOpen ? 'h-[210px] opacity-100' : 'h-0 opacity-0 pointer-events-none'
-        }`}
-        style={{ bottom: '3.5rem' }}
-      >
-        <EQPanel
-          open={eqOpen}
-          onClose={handleCloseEQ}
-          setEQBandGain={setEQBandGain}
-          setEQBypass={setEQBypass}
-        />
+        {/* ── Keyboard shortcuts overlay ── */}
+        {shortcutsOpen && (
+          <KeyboardShortcutsOverlay onClose={handleCloseShortcuts} />
+        )}
       </div>
 
-      {/* ── Bottom player bar ────────────────────────────────────────────────── */}
-      <PlayerBar
-        libOpen={showLib}
-        onToggleLib={handleToggleLib}
-        queueOpen={queueOpen}
-        onToggleQueue={handleToggleQueue}
-        onOpenNowPlaying={handleOpenNowPlaying}
-        onOpenShortcuts={handleOpenShortcuts}
-        eqOpen={eqOpen}
-        onToggleEQ={handleToggleEQ}
-      />
+      {/* ── Bottom stack: EQ drawer + PlayerBar ────────────────────────────── */}
+      <div className="shrink-0 flex flex-col">
+        {/* EQ drawer — slides open above PlayerBar with CSS transition */}
+        <div
+          className={`
+            bg-black/85 backdrop-blur-xl border-t border-white/8
+            overflow-hidden transition-all duration-200 ease-in-out
+            ${eqOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+          `}
+          style={{ height: eqOpen ? undefined : 0, maxHeight: eqOpen ? 210 : 0 }}
+        >
+          <div style={{ height: 210 }}>
+            <EQPanel
+              open={eqOpen}
+              onClose={handleCloseEQ}
+              setEQBandGain={setEQBandGain}
+              setEQBypass={setEQBypass}
+            />
+          </div>
+        </div>
+
+        {/* PlayerBar */}
+        <PlayerBar
+          libOpen={showLib}
+          onToggleLib={handleToggleLib}
+          queueOpen={queueOpen}
+          onToggleQueue={handleToggleQueue}
+          onOpenNowPlaying={handleOpenNowPlaying}
+          onOpenShortcuts={handleOpenShortcuts}
+          eqOpen={eqOpen}
+          onToggleEQ={handleToggleEQ}
+        />
+      </div>
     </div>
   );
 }

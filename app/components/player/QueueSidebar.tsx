@@ -44,13 +44,13 @@ function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, 
       <span
         {...attributes}
         {...listeners}
-        className="text-white/20 hover:text-white/50 cursor-grab active:cursor-grabbing flex-shrink-0"
+        className="text-white/20 hover:text-white/50 cursor-grab active:cursor-grabbing shrink-0"
         onClick={e => e.stopPropagation()}
       >
         <GripVertical size={14} />
       </span>
 
-      <div className="w-8 h-8 rounded overflow-hidden bg-white/8 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded overflow-hidden bg-white/8 flex items-center justify-center shrink-0">
         {coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={coverUrl} alt="" className="w-full h-full object-cover" />
@@ -64,14 +64,14 @@ function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, 
         <p className="text-[10px] text-white/35 truncate">{artist || ''}</p>
       </div>
 
-      <span className="text-[10px] text-white/30 tabular-nums flex-shrink-0">{formatTime(duration)}</span>
+      <span className="text-[10px] text-white/30 tabular-nums shrink-0">{formatTime(duration)}</span>
 
       <button
         onClick={e => { e.stopPropagation(); onRemove(pos); }}
-        className="opacity-0 group-hover:opacity-100 p-1 text-white/30 hover:text-red-400 transition-all flex-shrink-0"
+        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-white/30 hover:text-red-400 transition-all shrink-0 touch-manipulation"
         title="Remove from queue"
       >
-        <X size={12} />
+        <X size={14} />
       </button>
     </div>
   );
@@ -100,8 +100,8 @@ export function QueueSidebar({ onClose }: QueueSidebarProps) {
   const currentId = queue[queuePos] ?? null;
 
   return (
-    <div className="absolute right-0 top-0 bottom-14 w-72 bg-black/85 backdrop-blur-xl border-l border-white/8 flex flex-col z-20 select-none">
-      <div className="flex items-center justify-between px-3 pt-3 pb-2 flex-shrink-0">
+    <div className="absolute right-0 top-0 bottom-0 z-25 flex flex-col select-none bg-black/85 backdrop-blur-xl border-l border-white/8 w-full sm:w-72">
+      <div className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0">
         <span className="text-white/60 text-xs font-semibold tracking-wide">Queue</span>
         <div className="flex items-center gap-2">
           {queue.length > 0 && (

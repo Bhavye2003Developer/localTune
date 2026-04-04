@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle, type PointerEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Music, Play, Search, X } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
@@ -101,7 +101,7 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                 className={`flex items-center gap-2.5 px-3 cursor-pointer transition-colors group
                   ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
               >
-                <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded flex items-center justify-center shrink-0">
                   {isCurrent && playing ? (
                     <span className="flex gap-0.5 items-end h-4">
                       {[1, 2, 3].map(i => (
@@ -127,12 +127,12 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   </p>
                 </div>
                 {track.duration > 0 && (
-                  <span className="text-[10px] text-white/25 flex-shrink-0">
+                  <span className="text-[10px] text-white/25 shrink-0">
                     {formatTime(track.duration)}
                   </span>
                 )}
                 {track.error && (
-                  <span className="text-[9px] text-red-400 bg-red-400/10 px-1 rounded ml-1 flex-shrink-0">ERR</span>
+                  <span className="text-[9px] text-red-400 bg-red-400/10 px-1 rounded ml-1 shrink-0">ERR</span>
                 )}
               </div>
             );

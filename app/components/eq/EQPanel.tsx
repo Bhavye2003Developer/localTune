@@ -84,14 +84,14 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
           Bypass
         </button>
 
-        {/* Preset chips */}
-        <div className="flex gap-1 flex-wrap">
+        {/* Preset chips — horizontal scroll on mobile, wrap on desktop */}
+        <div className="flex gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible pb-0.5 sm:pb-0 max-w-full">
           {BUILTIN_PRESETS.map(p => (
             <button
               key={p.name}
               aria-label={p.name}
               onClick={() => loadPreset(p.gains, p.name)}
-              className={`px-2 py-0.5 rounded text-xs border transition-colors ${
+              className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
                 state.presetName === p.name
                   ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
                   : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
@@ -105,7 +105,7 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
               key={p.id ?? p.name}
               aria-label={p.name}
               onClick={() => loadPreset(p.bands.map(b => b.gain), p.name)}
-              className={`px-2 py-0.5 rounded text-xs border transition-colors ${
+              className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
                 state.presetName === p.name
                   ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
                   : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
