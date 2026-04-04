@@ -11,6 +11,7 @@ import {
 } from 'react';
 import jsmediatags from 'jsmediatags';
 import { toast } from 'sonner';
+import { db } from './db';
 
 // ─── Track type ───────────────────────────────────────────────────────────────
 
@@ -456,6 +457,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     (audioEl as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = true;
   }, [state.speed]);
 
+  // Persist duration to Dexie when loadedmetadata fires (duration becomes known)
+  useEffect(() => {
+    state.tracks.forEach(t => {
+      if (t.duration > 0) {
+        db.tracks.where('fileId').equals(t.id).modify({ duration: t.duration }).catch(() => {});
+      }
+    });
+  }, [state.tracks]);
+
   // Events are attached once inside attachAudioEvents(), called when audio is
   // first created — avoids the mount-time null problem.
 
@@ -477,7 +487,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  const loadFiles = useCallback((files: FileList | File[]) => {
+  const loadFiles = useCallback(async (files: FileList | File[]) => {
     const wasNull = !audioEl;
     ensureAudio();
     if (wasNull) attachAudioEvents(dispatch, getState);
@@ -487,18 +497,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     );
     if (arr.length === 0) return;
 
-    const tracks: Track[] = arr.map(f => ({
-      id: `${f.name}-${f.size}`,
-      name: f.name,
-      title: f.name.replace(/\.[^/.]+$/, ''),
-      artist: '',
-      album: '',
-      size: f.size,
-      type: f.type,
-      url: URL.createObjectURL(f),
-      coverUrl: '',
-      duration: 0,
+    // Pre-populate from Dexie for files we've seen before
+    const storedMap = new Map<string, { title: string; artist: string; album: string; duration: number }>();
+    await Promise.all(arr.map(async f => {
+      const fileId = `${f.name}-${f.size}`;
+      const stored = await db.tracks.where('fileId').equals(fileId).first();
+      if (stored) storedMap.set(fileId, { title: stored.title, artist: stored.artist ?? '', album: stored.album ?? '', duration: stored.duration });
     }));
+
+    const tracks: Track[] = arr.map(f => {
+      const fileId = `${f.name}-${f.size}`;
+      const cached = storedMap.get(fileId);
+      return {
+        id: fileId,
+        name: f.name,
+        title: cached?.title ?? f.name.replace(/\.[^/.]+$/, ''),
+        artist: cached?.artist ?? '',
+        album: cached?.album ?? '',
+        size: f.size,
+        type: f.type,
+        url: URL.createObjectURL(f),
+        coverUrl: '',
+        duration: cached?.duration ?? 0,
+      };
+    });
     dispatch({ type: 'ADD_TRACKS', tracks });
 
     tracks.forEach((track, i) => {
@@ -509,6 +531,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (meta.album) patch.album = meta.album;
         if (meta.coverUrl) patch.coverUrl = meta.coverUrl;
         if (Object.keys(patch).length > 0) dispatch({ type: 'UPDATE_TRACK', id: track.id, patch });
+
+        // Upsert metadata to Dexie (no blob URLs — session-scoped)
+        db.tracks.put({
+          fileId: track.id,
+          name: track.name,
+          title: patch.title ?? track.title,
+          artist: patch.artist ?? track.artist,
+          album: patch.album ?? track.album,
+          size: track.size,
+          type: track.type,
+          duration: track.duration,
+        }).catch(() => {}); // non-fatal
       });
     });
   }, []);
