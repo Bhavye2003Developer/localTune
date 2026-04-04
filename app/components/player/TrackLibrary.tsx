@@ -1,15 +1,33 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Music, Play } from 'lucide-react';
+import { Music, Play, Search, X } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
 
-export function TrackLibrary() {
+export interface TrackLibraryHandle {
+  focusSearch(): void;
+}
+
+export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary(_, ref) {
   const { state, playNow, playNext, addToQueue } = usePlayer();
   const { tracks, queue, queuePos, playing } = state;
   const currentId = queue[queuePos] ?? null;
   const parentRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+
+  useImperativeHandle(ref, () => ({
+    focusSearch: () => searchRef.current?.focus(),
+  }));
+
+  const filtered = query
+    ? tracks.filter(t =>
+        [t.title, t.artist, t.album, t.name].some(s =>
+          s.toLowerCase().includes(query.toLowerCase())
+        )
+      )
+    : tracks;
 
   const [menu, setMenu] = useState<{ visible: boolean; x: number; y: number; trackId: string }>({
     visible: false, x: 0, y: 0, trackId: '',
@@ -25,7 +43,7 @@ export function TrackLibrary() {
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
-    count: tracks.length,
+    count: filtered.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 52,
     overscan: 5,
@@ -35,13 +53,35 @@ export function TrackLibrary() {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <div className="px-3 py-2 text-white/30 text-[10px] tracking-widest uppercase">
-        Library — {tracks.length} track{tracks.length !== 1 ? 's' : ''}
+      {/* Search bar */}
+      <div className="px-3 py-1.5 relative">
+        <Search size={11} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
+        <input
+          ref={searchRef}
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search…"
+          className="w-full bg-white/6 border border-white/10 rounded-md text-xs text-white/70 placeholder-white/25 pl-6 pr-6 py-1 focus:outline-none focus:border-white/25 focus:bg-white/8 transition-colors"
+        />
+        {query && (
+          <button
+            onClick={() => setQuery('')}
+            className="absolute right-5 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors"
+          >
+            <X size={11} />
+          </button>
+        )}
       </div>
+
+      <div className="px-3 py-1 text-white/30 text-[10px] tracking-widest uppercase">
+        {query ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : `Library — ${tracks.length} track${tracks.length !== 1 ? 's' : ''}`}
+      </div>
+
       <div ref={parentRef} className="flex-1 overflow-y-auto">
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map(vItem => {
-            const track = tracks[vItem.index];
+            const track = filtered[vItem.index];
             const isCurrent = track.id === currentId;
             return (
               <div
@@ -99,6 +139,7 @@ export function TrackLibrary() {
           })}
         </div>
       </div>
+
       {menu.visible && (
         <div
           className="fixed z-50 bg-black/90 border border-white/15 rounded-lg py-1 shadow-xl"
@@ -126,4 +167,4 @@ export function TrackLibrary() {
       )}
     </div>
   );
-}
+});
