@@ -333,6 +333,16 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
   const onTime = () =>
     dispatch({ type: 'TICK', position: audio.currentTime, duration: audio.duration || 0 });
   const onEnded = () => dispatch({ type: 'TRACK_ENDED' });
+  const onMeta = () => {
+    const dur = audio.duration;
+    if (!isFinite(dur) || dur <= 0) return;
+    const state = getState();
+    const trackId = state.queue[state.queuePos];
+    if (trackId) {
+      dispatch({ type: 'UPDATE_TRACK', id: trackId, patch: { duration: dur } });
+      db.tracks.where('fileId').equals(trackId).modify({ duration: dur }).catch(() => {});
+    }
+  };
 
   const onError = async () => {
     const state = getState();
@@ -360,7 +370,7 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
   };
 
   audio.addEventListener('timeupdate', onTime);
-  audio.addEventListener('loadedmetadata', onTime);
+  audio.addEventListener('loadedmetadata', onMeta);
   audio.addEventListener('ended', onEnded);
   audio.addEventListener('error', onError);
 }
@@ -457,15 +467,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     (audioEl as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = true;
   }, [state.speed]);
 
-  // Persist duration to Dexie when loadedmetadata fires (duration becomes known)
-  useEffect(() => {
-    state.tracks.forEach(t => {
-      if (t.duration > 0) {
-        db.tracks.where('fileId').equals(t.id).modify({ duration: t.duration }).catch(() => {});
-      }
-    });
-  }, [state.tracks]);
-
   // Events are attached once inside attachAudioEvents(), called when audio is
   // first created — avoids the mount-time null problem.
 
@@ -533,7 +534,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (Object.keys(patch).length > 0) dispatch({ type: 'UPDATE_TRACK', id: track.id, patch });
 
         // Upsert metadata to Dexie (no blob URLs — session-scoped)
-        db.tracks.put({
+        const storedEntry = {
           fileId: track.id,
           name: track.name,
           title: patch.title ?? track.title,
@@ -542,7 +543,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           size: track.size,
           type: track.type,
           duration: track.duration,
-        }).catch(() => {}); // non-fatal
+        };
+        db.tracks.where('fileId').equals(track.id)
+          .modify(storedEntry)
+          .then(count => { if (count === 0) db.tracks.add(storedEntry).catch(() => {}); })
+          .catch(() => {});
       });
     });
   }, []);
