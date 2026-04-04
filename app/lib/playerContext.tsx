@@ -32,6 +32,7 @@ export interface Track {
 
 export type ShuffleMode = 'off' | 'random';
 export type LoopMode = 'off' | 'track' | 'queue';
+export type VizMode = 'nebula' | 'album-color';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ export interface PlayerState {
   shuffleMode: ShuffleMode;
   loopMode: LoopMode;
   musicalKey: number;
+  vizMode: VizMode;
   history: string[];
 }
 
@@ -70,6 +72,7 @@ export const INITIAL: PlayerState = {
   shuffleMode: 'off',
   loopMode: 'off',
   musicalKey: 8,
+  vizMode: 'nebula',
   history: [],
 };
 
@@ -98,6 +101,7 @@ type Action =
   | { type: 'CYCLE_SHUFFLE' }
   | { type: 'CYCLE_LOOP_MODE' }
   | { type: 'SET_KEY'; key: number }
+  | { type: 'CYCLE_VIZ_MODE' }
   | { type: 'TRACK_ENDED' }
   | { type: 'PUSH_HISTORY'; id: string };
 
@@ -236,6 +240,9 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
 
     case 'SET_KEY':
       return { ...state, musicalKey: action.key };
+
+    case 'CYCLE_VIZ_MODE':
+      return { ...state, vizMode: state.vizMode === 'nebula' ? 'album-color' : 'nebula' };
 
     case 'TRACK_ENDED': {
       const { loopMode, queuePos, queue } = state;
@@ -405,6 +412,7 @@ export interface PlayerContextValue {
   cycleShuffle: () => void;
   cycleLoopMode: () => void;
   setKey: (k: number) => void;
+  cycleVizMode: () => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -557,6 +565,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const cycleShuffle  = useCallback(() => dispatch({ type: 'CYCLE_SHUFFLE' }), []);
   const cycleLoopMode = useCallback(() => dispatch({ type: 'CYCLE_LOOP_MODE' }), []);
   const setKey        = useCallback((k: number) => dispatch({ type: 'SET_KEY', key: k }), []);
+  const cycleVizMode  = useCallback(() => dispatch({ type: 'CYCLE_VIZ_MODE' }), []);
 
   return (
     <PlayerContext.Provider value={{
@@ -567,7 +576,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       togglePlay, seek, next, prev,
       setVolume, toggleMute, setSpeed,
       setLoopA, setLoopB, setLoopAAt, setLoopBAt, toggleLoop, clearLoop,
-      cycleShuffle, cycleLoopMode, setKey,
+      cycleShuffle, cycleLoopMode, setKey, cycleVizMode,
     }}>
       {children}
     </PlayerContext.Provider>
