@@ -11,6 +11,7 @@ import {
 } from 'react';
 import jsmediatags from 'jsmediatags';
 import { toast } from 'sonner';
+import { db } from './db';
 
 // ─── Track type ───────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ export interface Track {
 
 export type ShuffleMode = 'off' | 'random';
 export type LoopMode = 'off' | 'track' | 'queue';
+export type VizMode = 'nebula' | 'album-color';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +53,8 @@ export interface PlayerState {
   shuffleMode: ShuffleMode;
   loopMode: LoopMode;
   musicalKey: number;
+  vizMode: VizMode;
+  history: string[];
 }
 
 export const INITIAL: PlayerState = {
@@ -69,6 +73,8 @@ export const INITIAL: PlayerState = {
   shuffleMode: 'off',
   loopMode: 'off',
   musicalKey: 8,
+  vizMode: 'nebula',
+  history: [],
 };
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -96,7 +102,9 @@ type Action =
   | { type: 'CYCLE_SHUFFLE' }
   | { type: 'CYCLE_LOOP_MODE' }
   | { type: 'SET_KEY'; key: number }
-  | { type: 'TRACK_ENDED' };
+  | { type: 'CYCLE_VIZ_MODE' }
+  | { type: 'TRACK_ENDED' }
+  | { type: 'PUSH_HISTORY'; id: string };
 
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -119,8 +127,13 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
         tracks: state.tracks.map(t => t.id === action.id ? { ...t, ...action.patch } : t),
       };
 
-    case 'PLAY_NOW':
-      return { ...state, queue: [action.id], queuePos: 0, playing: true, position: 0 };
+    case 'PLAY_NOW': {
+      const currentId = state.queue[state.queuePos];
+      const newHistory = currentId
+        ? [...state.history, currentId].slice(-50)
+        : state.history;
+      return { ...state, queue: [action.id], queuePos: 0, playing: true, position: 0, history: newHistory };
+    }
 
     case 'PLAY_NEXT': {
       const insertAt = state.queuePos + 1;
@@ -155,14 +168,28 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
     }
 
     case 'NEXT_TRACK': {
+      const currentId = state.queue[state.queuePos];
       const next = state.queuePos + 1;
-      if (next < state.queue.length) return { ...state, queuePos: next, playing: true, position: 0 };
-      if (state.loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0 };
-      return { ...state, playing: false };
+      if (next < state.queue.length) {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
+      }
+      if (state.loopMode === 'queue') {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
+      }
+      return { ...state, playing: false }; // no transition — do not push history
     }
 
     case 'PREV_TRACK': {
-      if (state.queuePos > 0) return { ...state, queuePos: state.queuePos - 1, playing: true, position: 0 };
+      if (state.queuePos > 0) {
+        return { ...state, queuePos: state.queuePos - 1, playing: true, position: 0 };
+      }
+      if (state.history.length > 0) {
+        const prev = state.history[state.history.length - 1];
+        const newHistory = state.history.slice(0, -1);
+        return { ...state, queue: [prev, ...state.queue], queuePos: 0, playing: true, position: 0, history: newHistory };
+      }
       return state;
     }
 
@@ -215,13 +242,28 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
     case 'SET_KEY':
       return { ...state, musicalKey: action.key };
 
+    case 'CYCLE_VIZ_MODE':
+      return { ...state, vizMode: state.vizMode === 'nebula' ? 'album-color' : 'nebula' };
+
     case 'TRACK_ENDED': {
       const { loopMode, queuePos, queue } = state;
       if (loopMode === 'track') return { ...state, playing: true, position: 0 };
+      const currentId = queue[queuePos];
       const next = queuePos + 1;
-      if (next < queue.length) return { ...state, queuePos: next, playing: true, position: 0 };
-      if (loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0 };
-      return { ...state, playing: false };
+      if (next < queue.length) {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
+      }
+      if (loopMode === 'queue') {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
+      }
+      return { ...state, playing: false }; // queue ended — do not push history
+    }
+
+    case 'PUSH_HISTORY': {
+      const newHistory = [...state.history, action.id].slice(-50);
+      return { ...state, history: newHistory };
     }
 
     default:
@@ -291,6 +333,16 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
   const onTime = () =>
     dispatch({ type: 'TICK', position: audio.currentTime, duration: audio.duration || 0 });
   const onEnded = () => dispatch({ type: 'TRACK_ENDED' });
+  const onMeta = () => {
+    const dur = audio.duration;
+    if (!isFinite(dur) || dur <= 0) return;
+    const state = getState();
+    const trackId = state.queue[state.queuePos];
+    if (trackId) {
+      dispatch({ type: 'UPDATE_TRACK', id: trackId, patch: { duration: dur } });
+      db.tracks.where('fileId').equals(trackId).modify({ duration: dur }).catch(() => {});
+    }
+  };
 
   const onError = async () => {
     const state = getState();
@@ -318,7 +370,7 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
   };
 
   audio.addEventListener('timeupdate', onTime);
-  audio.addEventListener('loadedmetadata', onTime);
+  audio.addEventListener('loadedmetadata', onMeta);
   audio.addEventListener('ended', onEnded);
   audio.addEventListener('error', onError);
 }
@@ -371,6 +423,7 @@ export interface PlayerContextValue {
   cycleShuffle: () => void;
   cycleLoopMode: () => void;
   setKey: (k: number) => void;
+  cycleVizMode: () => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -435,7 +488,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  const loadFiles = useCallback((files: FileList | File[]) => {
+  const loadFiles = useCallback(async (files: FileList | File[]) => {
     const wasNull = !audioEl;
     ensureAudio();
     if (wasNull) attachAudioEvents(dispatch, getState);
@@ -445,18 +498,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     );
     if (arr.length === 0) return;
 
-    const tracks: Track[] = arr.map(f => ({
-      id: `${f.name}-${f.size}`,
-      name: f.name,
-      title: f.name.replace(/\.[^/.]+$/, ''),
-      artist: '',
-      album: '',
-      size: f.size,
-      type: f.type,
-      url: URL.createObjectURL(f),
-      coverUrl: '',
-      duration: 0,
+    // Pre-populate from Dexie for files we've seen before
+    const storedMap = new Map<string, { title: string; artist: string; album: string; duration: number }>();
+    await Promise.all(arr.map(async f => {
+      const fileId = `${f.name}-${f.size}`;
+      const stored = await db.tracks.where('fileId').equals(fileId).first();
+      if (stored) storedMap.set(fileId, { title: stored.title, artist: stored.artist ?? '', album: stored.album ?? '', duration: stored.duration });
     }));
+
+    const tracks: Track[] = arr.map(f => {
+      const fileId = `${f.name}-${f.size}`;
+      const cached = storedMap.get(fileId);
+      return {
+        id: fileId,
+        name: f.name,
+        title: cached?.title ?? f.name.replace(/\.[^/.]+$/, ''),
+        artist: cached?.artist ?? '',
+        album: cached?.album ?? '',
+        size: f.size,
+        type: f.type,
+        url: URL.createObjectURL(f),
+        coverUrl: '',
+        duration: cached?.duration ?? 0,
+      };
+    });
     dispatch({ type: 'ADD_TRACKS', tracks });
 
     tracks.forEach((track, i) => {
@@ -467,6 +532,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (meta.album) patch.album = meta.album;
         if (meta.coverUrl) patch.coverUrl = meta.coverUrl;
         if (Object.keys(patch).length > 0) dispatch({ type: 'UPDATE_TRACK', id: track.id, patch });
+
+        // Upsert metadata to Dexie (no blob URLs — session-scoped)
+        const storedEntry = {
+          fileId: track.id,
+          name: track.name,
+          title: patch.title ?? track.title,
+          artist: patch.artist ?? track.artist,
+          album: patch.album ?? track.album,
+          size: track.size,
+          type: track.type,
+          duration: track.duration,
+        };
+        db.tracks.where('fileId').equals(track.id)
+          .modify(storedEntry)
+          .then(count => { if (count === 0) db.tracks.add(storedEntry).catch(() => {}); })
+          .catch(() => {});
       });
     });
   }, []);
@@ -508,12 +589,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const next = useCallback(() => dispatch({ type: 'NEXT_TRACK' }), []);
 
   const prev = useCallback(() => {
-    const { queuePos } = stateRef.current;
-    if (queuePos > 0) {
-      dispatch({ type: 'PREV_TRACK' });
-    } else if (audioEl) {
-      audioEl.currentTime = 0;
-    }
+    dispatch({ type: 'PREV_TRACK' });
   }, []);
 
   const setVolume     = useCallback((v: number) => dispatch({ type: 'SET_VOLUME', volume: v }), []);
@@ -528,6 +604,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const cycleShuffle  = useCallback(() => dispatch({ type: 'CYCLE_SHUFFLE' }), []);
   const cycleLoopMode = useCallback(() => dispatch({ type: 'CYCLE_LOOP_MODE' }), []);
   const setKey        = useCallback((k: number) => dispatch({ type: 'SET_KEY', key: k }), []);
+  const cycleVizMode  = useCallback(() => dispatch({ type: 'CYCLE_VIZ_MODE' }), []);
 
   return (
     <PlayerContext.Provider value={{
@@ -538,7 +615,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       togglePlay, seek, next, prev,
       setVolume, toggleMute, setSpeed,
       setLoopA, setLoopB, setLoopAAt, setLoopBAt, toggleLoop, clearLoop,
-      cycleShuffle, cycleLoopMode, setKey,
+      cycleShuffle, cycleLoopMode, setKey, cycleVizMode,
     }}>
       {children}
     </PlayerContext.Provider>

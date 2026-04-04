@@ -179,3 +179,83 @@ describe('reducer — queue model', () => {
     expect(next.playing).toBe(false);
   });
 });
+
+describe('reducer — history buffer', () => {
+  it('PUSH_HISTORY appends id to history', () => {
+    const next = reducer(INITIAL, { type: 'PUSH_HISTORY', id: 'a' });
+    expect(next.history).toEqual(['a']);
+  });
+
+  it('PUSH_HISTORY caps at 50 entries (drops oldest)', () => {
+    let s = INITIAL;
+    for (let i = 0; i < 52; i++) s = reducer(s, { type: 'PUSH_HISTORY', id: `t${i}` });
+    expect(s.history).toHaveLength(50);
+    expect(s.history[0]).toBe('t2');  // oldest two dropped
+    expect(s.history[49]).toBe('t51');
+  });
+
+  it('PREV_TRACK pops from history when queuePos is 0', () => {
+    const s = {
+      ...INITIAL,
+      queue: ['b'],
+      queuePos: 0,
+      history: ['a'],
+      playing: true,
+    };
+    const next = reducer(s, { type: 'PREV_TRACK' });
+    expect(next.queue[0]).toBe('a');
+    expect(next.queuePos).toBe(0);
+    expect(next.playing).toBe(true);
+    expect(next.history).toEqual([]);
+  });
+
+  it('PREV_TRACK does nothing when queuePos 0 and history empty', () => {
+    const s = { ...INITIAL, queue: ['a'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'PREV_TRACK' });
+    expect(next).toBe(s);
+  });
+
+  it('PLAY_NOW pushes previous current track to history', () => {
+    const s = { ...INITIAL, queue: ['a'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'PLAY_NOW', id: 'b' });
+    expect(next.history).toEqual(['a']);
+  });
+
+  it('NEXT_TRACK records current track in history when advancing', () => {
+    const s = { ...INITIAL, queue: ['a', 'b'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'NEXT_TRACK' });
+    expect(next.history).toEqual(['a']);
+    expect(next.queuePos).toBe(1);
+  });
+
+  it('TRACK_ENDED records current track in history when advancing', () => {
+    const s = { ...INITIAL, queue: ['a', 'b'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'TRACK_ENDED' });
+    expect(next.history).toEqual(['a']);
+    expect(next.queuePos).toBe(1);
+  });
+
+  it('NEXT_TRACK does not push history when queue exhausted and loop off', () => {
+    const s = { ...INITIAL, queue: ['a'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'NEXT_TRACK' });
+    expect(next.history).toEqual([]);
+    expect(next.playing).toBe(false);
+  });
+});
+
+describe('reducer — vizMode', () => {
+  it('initial vizMode is nebula', () => {
+    expect(INITIAL.vizMode).toBe('nebula');
+  });
+
+  it('CYCLE_VIZ_MODE toggles nebula → album-color', () => {
+    const next = reducer(INITIAL, { type: 'CYCLE_VIZ_MODE' });
+    expect(next.vizMode).toBe('album-color');
+  });
+
+  it('CYCLE_VIZ_MODE toggles album-color → nebula', () => {
+    const s = { ...INITIAL, vizMode: 'album-color' as const };
+    const next = reducer(s, { type: 'CYCLE_VIZ_MODE' });
+    expect(next.vizMode).toBe('nebula');
+  });
+});

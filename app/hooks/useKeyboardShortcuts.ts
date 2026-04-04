@@ -1,19 +1,25 @@
 import { useEffect, useRef } from 'react';
 import { usePlayer, getAudioEl } from '../lib/playerContext';
 
-export function useKeyboardShortcuts() {
-  const player = usePlayer();
+interface ShortcutOpts {
+  onOpenShortcuts?: () => void;
+  focusSearch?: () => void;
+}
 
-  // Keep a ref to the latest player value so the keydown handler never goes stale.
+export function useKeyboardShortcuts(opts: ShortcutOpts = {}) {
+  const player = usePlayer();
   const playerRef = useRef(player);
   useEffect(() => { playerRef.current = player; });
+
+  const optsRef = useRef(opts);
+  useEffect(() => { optsRef.current = opts; });
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
 
-      const { togglePlay, seek, next, prev, setVolume, toggleMute, cycleLoopMode, cycleShuffle, state } = playerRef.current;
+      const { togglePlay, seek, next, prev, setVolume, toggleMute, cycleLoopMode, cycleShuffle, cycleVizMode, setLoopA, state } = playerRef.current;
       const el = getAudioEl();
       const currentTime = el?.currentTime ?? 0;
       const { volume } = state;
@@ -50,10 +56,30 @@ export function useKeyboardShortcuts() {
         case 's':
           cycleShuffle();
           break;
+        case 'a':
+          setLoopA();
+          break;
+        case 'v':
+          cycleVizMode();
+          break;
+        case 'f':
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+          } else {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+          break;
+        case '?':
+          optsRef.current.onOpenShortcuts?.();
+          break;
+        case '/':
+          e.preventDefault();
+          optsRef.current.focusSearch?.();
+          break;
       }
     }
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []); // registers once — playerRef always holds latest values
+  }, []);
 }

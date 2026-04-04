@@ -1,7 +1,7 @@
 # FineTune V1 — Build Progress
 
 > Spec source: `FineTune_V1_Spec-1.md`
-> Last updated: 2026-04-03 (session 2)
+> Last updated: 2026-04-04 (session 3)
 
 ---
 
@@ -29,15 +29,18 @@
 | `app/components/player/PlayerLoader.tsx` | `'use client'` wrapper for `next/dynamic` ssr:false |
 | `app/components/player/PlayerShell.tsx` | Composes visualizer + library panel + player bar |
 | `app/components/player/FileDropZone.tsx` | Click-to-pick + drag-drop (incl. folder traversal) |
-| `app/components/player/TrackLibrary.tsx` | Virtualised track list (`@tanstack/react-virtual`) |
-| `app/components/player/PlayerBar.tsx` | Bottom control bar — all transport + secondary controls |
-| `app/components/visualizer/VisualizerLoader.tsx` | Legacy standalone loader (unused by player path) |
-| `app/components/visualizer/VisualizerContainer.tsx` | Canvas + key picker + iOS notice |
-| `app/components/visualizer/NebulaScene.tsx` | GLSL particle system — 4-shape morphing, audio-reactive |
+| `app/components/player/TrackLibrary.tsx` | Virtualised track list (`@tanstack/react-virtual`); forwardRef search input + `focusSearch` handle |
+| `app/components/player/PlayerBar.tsx` | Bottom control bar — all transport + secondary controls; album-art button opens Now Playing |
+| `app/components/player/NowPlayingPanel.tsx` | Full-screen Now Playing overlay — album art, metadata badges, color-thief gradient |
+| `app/components/player/KeyboardShortcutsOverlay.tsx` | Modal listing all keyboard shortcuts (`?` key) |
+| `app/components/visualizer/VisualizerLoader.tsx` | `'use client'` wrapper with `next/dynamic` ssr:false |
+| `app/components/visualizer/VisualizerContainer.tsx` | Canvas + key picker + album color extraction + Bloom pass |
+| `app/components/visualizer/NebulaScene.tsx` | GLSL particle system — 4-shape morphing, audio-reactive, `uColorTint` uniform |
 | `app/components/player/QueueSidebar.tsx` | dnd-kit sortable queue sidebar |
-| `app/hooks/useKeyboardShortcuts.ts` | Global keydown handler |
-| `__tests__/playerReducer.test.ts` | Pure reducer unit tests (23 cases) |
-| `__tests__/useKeyboardShortcuts.test.tsx` | Hook unit tests (12 cases) |
+| `app/hooks/useKeyboardShortcuts.ts` | Global keydown handler — Space/arrows/M/L/S/F/V/A//?/? |
+| `__tests__/playerReducer.test.ts` | Pure reducer unit tests (31 cases) |
+| `__tests__/useKeyboardShortcuts.test.tsx` | Hook unit tests (17 cases) |
+| `__tests__/visualizer.test.tsx` | Visualizer component tests (7 cases) |
 | `vitest.config.ts` | Vitest config |
 | `vitest.setup.ts` | jest-dom setup |
 
@@ -51,17 +54,17 @@
 - [x] Drag-and-drop zone with `webkitGetAsEntry()` folder traversal
 - [x] Mobile-compatible (standard file input — no drag required)
 - [x] Audio/video MIME filter
-- [ ] Dexie persistence of loaded tracks (tracks live in memory only; session resets on refresh)
+- [x] Dexie persistence of loaded tracks (track metadata + duration written on load; restored on next session)
 
 ---
 
-### Step 1 — File Loading Flow 🔶
+### Step 1 — File Loading Flow ✅
 
 | Stage | Status | Notes |
 |-------|--------|-------|
 | Stage 1 — File selection | ✅ | `FileDropZone.tsx` |
 | Stage 2 — ID3 metadata via `jsmediatags` | ✅ | title, artist, album, cover art extracted async; filename fallback |
-| Stage 3 — Library indexing | 🔶 | In-memory `useReducer` state; Dexie write not yet wired |
+| Stage 3 — Library indexing | ✅ | In-memory `useReducer` state; Dexie write wired — upsert on `loadedmetadata` |
 | Stage 4 — Duration from `<audio>` element | ✅ | `loadedmetadata` event updates duration on `Track` |
 | Stage 5 — Cover art blob URL | ✅ | APIC frame → `Uint8Array` → `Blob` → `URL.createObjectURL` stored as `track.coverUrl` |
 | Stage 6 — Analysis queue (essentia.js WASM) | ❌ | Not started |
@@ -92,13 +95,13 @@
 
 ---
 
-### Step 4 — Playback Control Bar UI 🔶
+### Step 4 — Playback Control Bar UI ✅
 
 #### Left section
 - [x] Album art thumbnail (40×40, Music icon fallback)
 - [x] Track title
 - [x] Artist name (falls back to filename)
-- [ ] Click track info → opens Now Playing panel
+- [x] Click track info → opens Now Playing panel
 
 #### Center section
 - [x] Previous / Play-Pause / Next buttons
@@ -111,10 +114,10 @@
 - [x] Mute toggle button (VolumeX / Volume2 icon)
 - [x] Shuffle button — Off / True Random (Fisher-Yates on `CYCLE_SHUFFLE`)
 - [x] Loop mode button — Off / Loop Track (`Repeat1`) / Loop Queue (`Repeat`)
-- [x] Speed cycle button (0.5 / 0.75 / 1 / 1.25 / 1.5 / 2×)
-- [x] Queue button placeholder (icon present; sidebar not yet implemented)
-- [ ] Keyboard arrow-key seek on focused seek bar
-- [ ] Now Playing panel (expanded album art + metadata)
+- [x] Speed cycle button (0.25 / 0.5 / 0.75 / 1 / 1.25 / 1.5 / 2 / 3 / 4×)
+- [x] Queue button (opens QueueSidebar)
+- [x] Keyboard arrow-key seek on focused seek bar (±5s, ArrowLeft/Right)
+- [x] Now Playing panel (expanded album art + metadata badges + color-thief gradient)
 
 #### A-B Loop controls (Feature 7)
 - [x] [A] and [B] buttons showing timestamps when set
@@ -126,13 +129,13 @@
 
 ---
 
-### Step 5 — Queue Management 🔶
+### Step 5 — Queue Management ✅
 
 - [x] Play Now / Play Next / Add to Queue / Remove / Clear
 - [x] Queue sidebar (accessible from Queue button in PlayerBar)
 - [x] Auto-advance respects queue order
 - [x] Shuffle modes affect queue (library order preserved — tracks[] never reordered)
-- [ ] History buffer (Previous decrements queuePos; 50-track circular history not yet implemented)
+- [x] History buffer — 50-track circular history; Previous pops from history
 
 ---
 
@@ -147,14 +150,14 @@
 | `M` | Mute toggle | ✅ |
 | `L` | Cycle loop mode | ✅ |
 | `S` | Shuffle toggle | ✅ |
-| `F` | Full-screen visualizer | ❌ |
-| `V` | Cycle visualizer mode | ❌ |
-| `E` | Toggle EQ panel | ❌ |
-| `C` | Toggle chord timeline | ❌ |
-| `B` | Toggle metronome | ❌ |
-| `A` | Set A loop point | ❌ |
-| `/` | Focus search | ❌ |
-| `?` | Show shortcuts overlay | ❌ |
+| `F` | Full-screen visualizer | ✅ |
+| `V` | Cycle visualizer mode | ✅ |
+| `E` | Toggle EQ panel | ❌ Deferred — next session (Feature 2 not built) |
+| `C` | Toggle chord timeline | ❌ Deferred — next session (Feature 4 not built) |
+| `B` | Toggle metronome | ❌ Deferred — next session (Feature 5 not built) |
+| `A` | Set A loop point | ✅ |
+| `/` | Focus search | ✅ |
+| `?` | Show shortcuts overlay | ✅ |
 
 ---
 
@@ -169,19 +172,19 @@
 
 ---
 
-### Step 8 — Now Playing Metadata Display ❌
+### Step 8 — Now Playing Metadata Display 🔶
 
-- [ ] Full-screen Now Playing panel
-- [ ] Large album art centered
-- [ ] Dynamic background gradient from `color-thief-browser` dominant color
-- [ ] BPM chip, Camelot key badge, energy dot, mood tag
-- [ ] Format badge, sample rate, file size
+- [x] Full-screen Now Playing panel (`NowPlayingPanel.tsx`, triggered by album-art click)
+- [x] Large album art centered (160×160, with Music fallback icon)
+- [x] Dynamic background gradient from `color-thief-browser` dominant color
+- [ ] BPM chip, Camelot key badge, energy dot, mood tag (requires Feature 3 — essentia.js)
+- [x] Format badge, sample rate, file size
 
 ---
 
 ## Features
 
-### Feature 1 — WebGL Nebula Visualizer 🔶
+### Feature 1 — WebGL Nebula Visualizer ✅
 
 - [x] Full-screen WebGL particle system (`@react-three/fiber`, `three`)
 - [x] 12,000 particles (desktop) / 3,200 (iOS)
@@ -193,10 +196,10 @@
 - [x] `OrbitControls` (pan disabled, zoom disabled)
 - [x] iOS detection — reduced particles, antialiasing off, DPR 1
 - [x] Musical key picker UI (12 buttons, top-right)
-- [ ] Terrain mode (3D mountain range, camera auto-fly)
-- [ ] Scope mode (dual-channel oscilloscope, CRT phosphor shader)
-- [ ] Album Color Mode (dominant color from cover art → particle palette)
-- [ ] Bloom post-processing (currently no `@react-three/postprocessing` pass active)
+- [x] Album Color Mode (`V` key cycles; `uColorTint`/`uTintStrength` uniforms; ColorThief extraction)
+- [x] Bloom post-processing (`EffectComposer` + `Bloom` — iOS skipped)
+
+> Note: Terrain mode and Scope mode removed from spec — not needed.
 
 ---
 
@@ -257,9 +260,8 @@
 - [x] Loop toggle on/off
 - [x] Clear loop points
 - [x] A-B region visual on progress bar
-- [x] Speed: 0.5×–2× via cycle button
+- [x] Speed: 0.25×–4.0× via cycle button (0.25 / 0.5 / 0.75 / 1 / 1.25 / 1.5 / 2 / 3 / 4)
 - [x] `preservesPitch = true` — pitch unchanged at all speeds
-- [ ] Speed range extended to 0.25×–4.0× per spec
 - [ ] Optional pitch-shift mode (±12 semitones independent of speed)
 
 ---
@@ -305,11 +307,11 @@
 
 ---
 
-### Feature 12 — Album Art Color Extraction ❌
+### Feature 12 — Album Art Color Extraction 🔶
 
-- [ ] `color-thief-browser` dominant color extraction from `coverUrl`
-- [ ] Animated gradient background in player
-- [ ] Nebula particle palette tied to album color
+- [x] `color-thief-browser` dominant color extraction from `coverUrl`
+- [x] Animated gradient background in player (NowPlayingPanel radial gradient)
+- [x] Nebula particle palette tied to album color (`uColorTint` + `uTintStrength` uniforms)
 - [ ] Hash-based gradient fallback for tracks without art
 
 ---
@@ -355,13 +357,13 @@ All shortcuts listed in spec — none implemented yet.
 | `framer-motion` | Animations | ✅ |
 | `dexie` | IndexedDB | ✅ |
 | `lucide-react` | Icons | ✅ |
-| `sonner` | Toast notifications | ✅ (not yet used) |
+| `sonner` | Toast notifications | ✅ |
 | `three` | WebGL | ✅ |
 | `@react-three/fiber` | React Three.js | ✅ |
 | `@react-three/drei` | Three helpers | ✅ |
-| `@react-three/postprocessing` | Bloom etc. | ✅ (bloom not yet active) |
+| `@react-three/postprocessing` | Bloom etc. | ✅ |
 | `@tanstack/react-virtual` | Virtual list | ✅ |
-| `color-thief-browser` | Color extraction | ✅ (not yet used) |
+| `color-thief-browser` | Color extraction | ✅ |
 | `jsmediatags` | ID3 tags | ✅ |
 | `@dnd-kit/core` + `@dnd-kit/sortable` | Queue drag-reorder | ✅ |
 | `vitest` + `@testing-library/react` | Test framework | ✅ |
@@ -375,17 +377,28 @@ All shortcuts listed in spec — none implemented yet.
 
 ---
 
+---
+
+## Deferred to Next Session
+
+These items were explicitly scoped out of session 3 because their underlying features are not yet built:
+
+| Key | Action | Blocked On |
+|-----|--------|------------|
+| `E` | Toggle EQ panel | Feature 2 (10-band EQ) not built |
+| `C` | Toggle chord timeline | Feature 4 (chord detection) not built |
+| `B` | Toggle metronome | Feature 5 (BPM metronome) not built |
+
+---
+
 ## What's Next (Recommended Build Order)
 
-1. **Step 5 — Queue Management** — needed before Features 6, 13 make sense
-2. **Step 6 — Keyboard Shortcuts** — low effort, high UX value
-3. **Step 8 / Now Playing Panel** — ties in cover art + color extraction already in state
-4. **Feature 12 — Album Color Extraction** — `color-thief-browser` already installed, `coverUrl` already in state
-5. **Feature 2 — 10-Band EQ** — audio graph is in place; just insert `BiquadFilterNode` chain
-6. **Feature 3 — BPM/Key/Mood Analysis** — unlocks Features 4, 5, 13
-7. **Feature 11 — Waveform** — visual anchor for A-B markers
-8. **Feature 10 — Media Session API** — small effort, huge perceived quality
-9. **Feature 7 — Pitch shift / wider speed range**
-10. **Feature 6 — Gapless Playback**
-11. **Feature 15 — PWA**
-12. **Features 8, 9, 13, 14** — advanced/networked features
+1. **Feature 2 — 10-Band Parametric EQ** — audio graph is in place; just insert `BiquadFilterNode` chain; unlocks `E` shortcut
+2. **Feature 3 — BPM/Key/Mood Analysis** — unlocks Features 4, 5, 13, and Step 8 analysis chips
+3. **Feature 4 — Chord Detection** — unlocks `C` shortcut
+4. **Feature 5 — Metronome** — unlocks `B` shortcut
+5. **Feature 10 — Media Session API** — small effort, huge perceived quality
+6. **Feature 11 — Waveform Display** — visual anchor for A-B markers
+7. **Feature 6 — Gapless Playback**
+8. **Feature 15 — PWA**
+9. **Features 7 (pitch shift), 8, 9, 13, 14** — advanced/networked features
