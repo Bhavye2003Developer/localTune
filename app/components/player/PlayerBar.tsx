@@ -120,6 +120,15 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: Pl
     setContextMenu(m => ({ ...m, visible: false }));
   }, [contextMenu.pct, duration, setLoopAAt, setLoopBAt]);
 
+  const onSeekBarKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    e.stopPropagation();
+    const el = getAudioEl();
+    if (!el || !duration) return;
+    seek(e.key === 'ArrowRight' ? el.currentTime + 5 : Math.max(0, el.currentTime - 5));
+  }, [duration, seek]);
+
   // ── Derived progress percentages ──────────────────────────────────────────
 
   const pct = duration > 0 ? (position / duration) * 100 : 0;
@@ -140,11 +149,13 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: Pl
       {/* Outer div is the large hit zone; inner track is the visual bar */}
       <div
         ref={progressRef}
-        className="relative cursor-pointer group py-1.5"
+        tabIndex={0}
+        className="relative cursor-pointer group py-1.5 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/30 rounded"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onContextMenu={onContextMenu}
+        onKeyDown={onSeekBarKeyDown}
       >
         {/* Visual track */}
         <div className="relative h-1 bg-white/20 rounded-full overflow-visible">
