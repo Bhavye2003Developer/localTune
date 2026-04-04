@@ -125,9 +125,9 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: Pl
     e.preventDefault();
     e.stopPropagation();
     const el = getAudioEl();
-    if (!el || !duration) return;
+    if (!el) return;
     seek(e.key === 'ArrowRight' ? el.currentTime + 5 : Math.max(0, el.currentTime - 5));
-  }, [duration, seek]);
+  }, [seek]);
 
   // ── Derived progress percentages ──────────────────────────────────────────
 
@@ -137,7 +137,8 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: Pl
 
   const nextSpeed = () => {
     const idx = SPEEDS.indexOf(speed);
-    setSpeed(SPEEDS[(idx + 1) % SPEEDS.length]);
+    const safeIdx = idx === -1 ? SPEEDS.indexOf(1) : idx;
+    setSpeed(SPEEDS[(safeIdx + 1) % SPEEDS.length]);
   };
 
   const speedLabel = `${speed}×`;
