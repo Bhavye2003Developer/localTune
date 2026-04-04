@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, memo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -19,7 +19,7 @@ interface Props {
   coverUrl?: string;
 }
 
-export function VisualizerContainer({ analyserNode, musicalKey: extKey, onKeyChange, vizMode, coverUrl }: Props) {
+export const VisualizerContainer = memo(function VisualizerContainer({ analyserNode, musicalKey: extKey, onKeyChange, vizMode, coverUrl }: Props) {
   const [intKey, setIntKey] = useState(8); // G# = cyan default
   const musicalKey = extKey ?? intKey;
   const setMusicalKey = onKeyChange ?? setIntKey;
@@ -133,4 +133,4 @@ export function VisualizerContainer({ analyserNode, musicalKey: extKey, onKeyCha
       </div>
     </AudioDataProvider>
   );
-}
+});

@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useRef, useState, useEffect, type MouseEvent, type PointerEvent } from 'react';
+import { useCallback, useRef, useState, useEffect, memo, type MouseEvent, type PointerEvent } from 'react';
 import {
   SkipBack, SkipForward, Play, Pause,
   Volume2, VolumeX, Shuffle, Repeat, Repeat1,
-  Library, RotateCcw, ListMusic, Music,
+  Library, RotateCcw, ListMusic, Music, SlidersHorizontal,
 } from 'lucide-react';
 import { usePlayer, formatTime, getAudioEl } from '../../lib/playerContext';
 import type { LoopMode } from '../../lib/playerContext';
@@ -18,6 +18,8 @@ interface PlayerBarProps {
   onToggleQueue: () => void;
   onOpenNowPlaying: () => void;
   onOpenShortcuts: () => void;
+  eqOpen: boolean;
+  onToggleEQ: () => void;
 }
 
 function LoopIcon({ mode }: { mode: LoopMode }) {
@@ -25,7 +27,7 @@ function LoopIcon({ mode }: { mode: LoopMode }) {
   return <Repeat size={15} />;
 }
 
-export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue, onOpenNowPlaying, onOpenShortcuts }: PlayerBarProps) {
+export const PlayerBar = memo(function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue, onOpenNowPlaying, onOpenShortcuts, eqOpen, onToggleEQ }: PlayerBarProps) {
   const {
     state,
     togglePlay, seek, next, prev,
@@ -361,6 +363,17 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue, onOp
           <ListMusic size={15} />
         </button>
 
+        {/* EQ toggle */}
+        <button
+          onClick={onToggleEQ}
+          title="EQ (E)"
+          className={`p-1.5 rounded transition-colors flex-shrink-0 ${
+            eqOpen ? 'text-violet-400 bg-violet-400/10' : 'text-white/35 hover:text-white/70'
+          }`}
+        >
+          <SlidersHorizontal size={15} />
+        </button>
+
         {/* Shortcuts help */}
         <button
           onClick={onOpenShortcuts}
@@ -417,4 +430,4 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue, onOp
       </div>
     </div>
   );
-}
+});

@@ -1,7 +1,7 @@
 # FineTune V1 — Build Progress
 
 > Spec source: `FineTune_V1_Spec-1.md`
-> Last updated: 2026-04-04 (session 3)
+> Last updated: 2026-04-04 (session 5 — perf + build fixes)
 
 ---
 
@@ -37,8 +37,15 @@
 | `app/components/visualizer/VisualizerContainer.tsx` | Canvas + key picker + album color extraction + Bloom pass |
 | `app/components/visualizer/NebulaScene.tsx` | GLSL particle system — 4-shape morphing, audio-reactive, `uColorTint` uniform |
 | `app/components/player/QueueSidebar.tsx` | dnd-kit sortable queue sidebar |
-| `app/hooks/useKeyboardShortcuts.ts` | Global keydown handler — Space/arrows/M/L/S/F/V/A//?/? |
+| `app/lib/eqPresets.ts` | Band/EQState interfaces, INITIAL_BANDS (10 bands), BUILTIN_PRESETS (8), eqReducer |
+| `app/components/eq/EQCurve.tsx` | SVG EQ curve — 512 log-spaced points, mathematical biquad transfer function, draggable dots |
+| `app/components/eq/EQPanel.tsx` | EQ drawer shell — useReducer, bypass toggle, preset chips, Dexie save |
+| `app/hooks/useKeyboardShortcuts.ts` | Global keydown handler — Space/arrows/M/L/S/E/F/V/A//?/? |
 | `__tests__/playerReducer.test.ts` | Pure reducer unit tests (31 cases) |
+| `__tests__/eqReducer.test.ts` | EQ reducer unit tests (12 cases) |
+| `__tests__/playerContext.eq.test.ts` | EQ audio chain tests (6 cases) |
+| `__tests__/EQCurve.test.tsx` | EQCurve component + math tests (14 cases) |
+| `__tests__/EQPanel.test.tsx` | EQPanel component tests (11 cases) |
 | `__tests__/useKeyboardShortcuts.test.tsx` | Hook unit tests (17 cases) |
 | `__tests__/visualizer.test.tsx` | Visualizer component tests (7 cases) |
 | `vitest.config.ts` | Vitest config |
@@ -139,7 +146,7 @@
 
 ---
 
-### Step 6 — Keyboard Shortcuts 🔶
+### Step 6 — Keyboard Shortcuts ✅ (partial — C and B still pending Features 4/5)
 
 | Key | Action | Status |
 |-----|--------|--------|
@@ -152,7 +159,7 @@
 | `S` | Shuffle toggle | ✅ |
 | `F` | Full-screen visualizer | ✅ |
 | `V` | Cycle visualizer mode | ✅ |
-| `E` | Toggle EQ panel | ❌ Deferred — next session (Feature 2 not built) |
+| `E` | Toggle EQ panel | ✅ |
 | `C` | Toggle chord timeline | ❌ Deferred — next session (Feature 4 not built) |
 | `B` | Toggle metronome | ❌ Deferred — next session (Feature 5 not built) |
 | `A` | Set A loop point | ✅ |
@@ -203,15 +210,18 @@
 
 ---
 
-### Feature 2 — 10-Band Parametric EQ ❌
+### Feature 2 — 10-Band Parametric EQ ✅
 
-- [ ] 10 `BiquadFilterNode` bands in Web Audio graph
-- [ ] Per-band: frequency slider (log scale), ±15dB gain, Q factor
-- [ ] Low shelf (band 1), high shelf (band 10), peaking/notch (bands 2–9)
-- [ ] Live frequency response curve on canvas
-- [ ] Presets: Flat, Bass Boost, Vocal Presence, Hip-Hop, Electronic, Classical, Podcast, Acoustic
-- [ ] Custom preset save/load via Dexie `eqPresets` table
-- [ ] Per-band bypass + full EQ bypass (gain → 0, nodes stay connected)
+- [x] 10 `BiquadFilterNode` bands in Web Audio graph (`src → analyser → eq[0..9] → gainNode → destination`)
+- [x] Per-band: ±15dB gain, Q factor, type (lowshelf/peaking/highshelf)
+- [x] Low shelf (band 1, 32Hz), high shelf (band 10, 16kHz), peaking (bands 2–9)
+- [x] Live SVG frequency response curve — 512 log-spaced points, mathematical biquad transfer function
+- [x] Draggable dots on curve — vertical drag changes gain, double-click resets to 0
+- [x] Presets: Flat, Bass Boost, Vocal Presence, Hip-Hop, Electronic, Classical, Podcast, Acoustic
+- [x] Custom preset save/load via Dexie `eqPresets` table
+- [x] Full EQ bypass (zeros all gains, restores on un-bypass — no audio click)
+- [x] EQ drawer slides above PlayerBar (`h-[210px]`, `bottom: 3.5rem`, CSS transition)
+- [x] `E` keyboard shortcut toggles EQ panel
 
 ---
 
@@ -379,22 +389,23 @@ All shortcuts listed in spec — none implemented yet.
 
 ---
 
-## Deferred to Next Session
+## Performance Fixes (session 5)
 
-These items were explicitly scoped out of session 3 because their underlying features are not yet built:
-
-| Key | Action | Blocked On |
-|-----|--------|------------|
-| `E` | Toggle EQ panel | Feature 2 (10-band EQ) not built |
-| `C` | Toggle chord timeline | Feature 4 (chord detection) not built |
-| `B` | Toggle metronome | Feature 5 (BPM metronome) not built |
+- `audioData.tsx`: Pre-allocated `Uint8Array` buffers (reused every RAF frame) — eliminated 3,600+ GC allocations/min; `musicalKey` via ref instead of effect dependency to avoid RAF restart
+- `EQCurve.tsx`: Wrapped in `React.memo`; memoized 512-point biquad path with `useMemo(bands)`; static grid elements hoisted to module level; `bandsRef` stabilizes pointer callbacks
+- `EQPanel.tsx`: Wrapped in `React.memo` — prevents re-renders from parent TICK dispatches
+- `PlayerBar.tsx`: Wrapped in `React.memo`
+- `VisualizerContainer.tsx`: Wrapped in `React.memo` — prevents Canvas re-creation on parent state changes
+- `NebulaScene.tsx`: `isIOS()` call moved to module-level constant (was called every render); removed no-op `useEffect`
+- `PlayerShell.tsx`: `currentTrack` wrapped in `useMemo`; all inline arrow handlers replaced with `useCallback`
+- `vitest.config.ts`: Excluded `.worktrees/**` from test runs to fix phantom failures
+- `app/types/color-thief-browser.d.ts`: Added missing type declaration — fixes production build TS error
 
 ---
 
 ## What's Next (Recommended Build Order)
 
-1. **Feature 2 — 10-Band Parametric EQ** — audio graph is in place; just insert `BiquadFilterNode` chain; unlocks `E` shortcut
-2. **Feature 3 — BPM/Key/Mood Analysis** — unlocks Features 4, 5, 13, and Step 8 analysis chips
+1. **Feature 3 — BPM/Key/Mood Analysis** — unlocks Features 4, 5, 13, and Step 8 analysis chips
 3. **Feature 4 — Chord Detection** — unlocks `C` shortcut
 4. **Feature 5 — Metronome** — unlocks `B` shortcut
 5. **Feature 10 — Media Session API** — small effort, huge perceived quality

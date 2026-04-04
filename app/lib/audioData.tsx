@@ -47,36 +47,54 @@ export function AudioDataProvider({
     key: musicalKey,
   });
 
+  // Keep musicalKey in a ref — changes don't need to restart the RAF loop
+  const musicalKeyRef = useRef(musicalKey);
+  useEffect(() => { musicalKeyRef.current = musicalKey; }, [musicalKey]);
+
+  // Pre-allocate reusable buffers — sized on first analyser connection; never recreated
+  const freqBufRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const tdBufRef   = useRef<Uint8Array<ArrayBuffer> | null>(null);
+
   useEffect(() => {
     let rafId: number;
     const startTime = performance.now();
 
     function tick() {
       const elapsed = (performance.now() - startTime) / 1000;
-      dataRef.current.key = musicalKey;
+      dataRef.current.key = musicalKeyRef.current;
 
       if (analyserNode) {
         const fftSize = analyserNode.frequencyBinCount;
-        const freqBuf = new Uint8Array(fftSize);
-        analyserNode.getByteFrequencyData(freqBuf);
 
-        const tdBuf = new Uint8Array(fftSize * 2);
+        // Allocate once; reuse every frame — no GC pressure
+        if (!freqBufRef.current || freqBufRef.current.length !== fftSize) {
+          freqBufRef.current = new Uint8Array(new ArrayBuffer(fftSize));
+        }
+        if (!tdBufRef.current || tdBufRef.current.length !== fftSize * 2) {
+          tdBufRef.current = new Uint8Array(new ArrayBuffer(fftSize * 2));
+        }
+
+        const freqBuf = freqBufRef.current;
+        const tdBuf   = tdBufRef.current;
+
+        analyserNode.getByteFrequencyData(freqBuf);
         analyserNode.getByteTimeDomainData(tdBuf);
+
         const len = Math.min(tdBuf.length, dataRef.current.timeDomain.length);
         for (let i = 0; i < len; i++) {
           dataRef.current.timeDomain[i] = tdBuf[i] / 128.0 - 1.0;
         }
 
         const bassEnd = Math.floor(fftSize * 0.05);
-        const midEnd = Math.floor(fftSize * 0.4);
+        const midEnd  = Math.floor(fftSize * 0.4);
 
         let bs = 0, ms = 0, ts = 0;
-        for (let i = 0; i < bassEnd; i++) bs += freqBuf[i];
-        for (let i = bassEnd; i < midEnd; i++) ms += freqBuf[i];
-        for (let i = midEnd; i < fftSize; i++) ts += freqBuf[i];
+        for (let i = 0;        i < bassEnd; i++) bs += freqBuf[i];
+        for (let i = bassEnd;  i < midEnd;  i++) ms += freqBuf[i];
+        for (let i = midEnd;   i < fftSize; i++) ts += freqBuf[i];
 
-        dataRef.current.bass = bs / bassEnd / 255;
-        dataRef.current.mid = ms / (midEnd - bassEnd) / 255;
+        dataRef.current.bass   = bs / bassEnd / 255;
+        dataRef.current.mid    = ms / (midEnd - bassEnd) / 255;
         dataRef.current.treble = ts / (fftSize - midEnd) / 255;
       } else {
         // Animated demo mode — drives the visualizer without audio
@@ -84,8 +102,8 @@ export function AudioDataProvider({
         const m = (Math.sin(elapsed * 0.7 + 1.0) + 1) / 2;
         const t = (Math.sin(elapsed * 2.2 + 2.0) + 1) / 2;
 
-        dataRef.current.bass = b * 0.7 + 0.1;
-        dataRef.current.mid = m * 0.5 + 0.05;
+        dataRef.current.bass   = b * 0.7 + 0.1;
+        dataRef.current.mid    = m * 0.5 + 0.05;
         dataRef.current.treble = t * 0.35 + 0.05;
 
         const tdLen = dataRef.current.timeDomain.length;
@@ -93,7 +111,7 @@ export function AudioDataProvider({
           const x = i / tdLen;
           dataRef.current.timeDomain[i] =
             Math.sin(x * Math.PI * 12 + elapsed * 3) * 0.35 * b +
-            Math.sin(x * Math.PI * 7 + elapsed * 5) * 0.15 * t;
+            Math.sin(x * Math.PI * 7  + elapsed * 5) * 0.15 * t;
         }
       }
 
@@ -102,7 +120,9 @@ export function AudioDataProvider({
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [analyserNode, musicalKey]);
+  // Only restart when analyserNode changes (e.g. new audio context).
+  // musicalKey is handled via ref above — no restart needed.
+  }, [analyserNode]);
 
   return (
     <AudioDataContext.Provider value={dataRef as MutableRefObject<AudioData>}>

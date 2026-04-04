@@ -4,6 +4,7 @@ import { usePlayer, getAudioEl } from '../lib/playerContext';
 interface ShortcutOpts {
   onOpenShortcuts?: () => void;
   focusSearch?: () => void;
+  onToggleEQ?: () => void;
 }
 
 export function useKeyboardShortcuts(opts: ShortcutOpts = {}) {
@@ -61,6 +62,9 @@ export function useKeyboardShortcuts(opts: ShortcutOpts = {}) {
           break;
         case 'v':
           cycleVizMode();
+          break;
+        case 'e':
+          optsRef.current.onToggleEQ?.();
           break;
         case 'f':
           if (document.fullscreenElement) {

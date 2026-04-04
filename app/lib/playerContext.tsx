@@ -12,6 +12,7 @@ import {
 import jsmediatags from 'jsmediatags';
 import { toast } from 'sonner';
 import { db } from './db';
+import { INITIAL_BANDS } from './eqPresets';
 
 // ─── Track type ───────────────────────────────────────────────────────────────
 
@@ -277,18 +278,49 @@ let audioEl: HTMLAudioElement | null = null;
 let audioCtx: AudioContext | null = null;
 let _analyserNode: AnalyserNode | null = null;
 let gainNode: GainNode | null = null;
+let eqNodes: BiquadFilterNode[] = [];
+let eqBypassGains: number[] = [];
 
-function ensureAudio() {
+export function ensureAudio() {
   if (audioEl) return;
   audioEl = new Audio();
   audioCtx = new AudioContext();
   _analyserNode = audioCtx.createAnalyser();
   _analyserNode.fftSize = 2048;
   gainNode = audioCtx.createGain();
+
+  // Create 10 BiquadFilter nodes from INITIAL_BANDS config
+  eqNodes = INITIAL_BANDS.map(band => {
+    const node = audioCtx!.createBiquadFilter();
+    node.type = band.type;
+    node.frequency.value = band.freq;
+    node.Q.value = band.q;
+    node.gain.value = 0;
+    return node;
+  });
+
+  // Chain: src → analyser → eq[0..9] → gainNode → destination
   const src = audioCtx.createMediaElementSource(audioEl);
   src.connect(_analyserNode);
-  _analyserNode.connect(gainNode);
+  _analyserNode.connect(eqNodes[0]);
+  for (let i = 0; i < eqNodes.length - 1; i++) {
+    eqNodes[i].connect(eqNodes[i + 1]);
+  }
+  eqNodes[eqNodes.length - 1].connect(gainNode);
   gainNode.connect(audioCtx.destination);
+}
+
+export function setEQBandGain(index: number, gainDb: number): void {
+  if (eqNodes[index]) eqNodes[index].gain.value = gainDb;
+}
+
+export function setEQBypass(on: boolean): void {
+  if (on) {
+    eqBypassGains = eqNodes.map(n => n.gain.value);
+    eqNodes.forEach(n => { n.gain.value = 0; });
+  } else {
+    eqNodes.forEach((n, i) => { n.gain.value = eqBypassGains[i] ?? 0; });
+  }
 }
 
 // ─── FFmpeg lazy loader ───────────────────────────────────────────────────────
@@ -424,6 +456,8 @@ export interface PlayerContextValue {
   cycleLoopMode: () => void;
   setKey: (k: number) => void;
   cycleVizMode: () => void;
+  setEQBandGain: (index: number, gainDb: number) => void;
+  setEQBypass: (on: boolean) => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -605,6 +639,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const cycleLoopMode = useCallback(() => dispatch({ type: 'CYCLE_LOOP_MODE' }), []);
   const setKey        = useCallback((k: number) => dispatch({ type: 'SET_KEY', key: k }), []);
   const cycleVizMode  = useCallback(() => dispatch({ type: 'CYCLE_VIZ_MODE' }), []);
+  const setEQBandGainCb = useCallback((index: number, gainDb: number) => setEQBandGain(index, gainDb), []);
+  const setEQBypassCb   = useCallback((on: boolean) => setEQBypass(on), []);
 
   return (
     <PlayerContext.Provider value={{
@@ -616,6 +652,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setVolume, toggleMute, setSpeed,
       setLoopA, setLoopB, setLoopAAt, setLoopBAt, toggleLoop, clearLoop,
       cycleShuffle, cycleLoopMode, setKey, cycleVizMode,
+      setEQBandGain: setEQBandGainCb, setEQBypass: setEQBypassCb,
     }}>
       {children}
     </PlayerContext.Provider>

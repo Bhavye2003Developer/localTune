@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { isIOS } from "../../lib/utils";
@@ -187,6 +186,9 @@ let interpKey  = -1;
 let smoothBass = 0;
 let smoothMid  = 0;
 
+// isIOS result cached at module level — no need to call on every render
+const IS_IOS = isIOS();
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface NebulaSceneProps {
@@ -197,10 +199,6 @@ interface NebulaSceneProps {
 
 export function NebulaScene({ colorTint }: NebulaSceneProps = {}) {
   const audioRef = useAudioData();
-
-  useEffect(() => {
-    sphereMat.uniforms.uTime.value = 0;
-  }, []);
 
   useFrame(({ clock }) => {
     const { bass, mid, key } = audioRef.current;
@@ -234,5 +232,5 @@ export function NebulaScene({ colorTint }: NebulaSceneProps = {}) {
     }
   });
 
-  return <points geometry={isIOS() ? iosGeo : deskGeo} material={sphereMat} />;
+  return <points geometry={IS_IOS ? iosGeo : deskGeo} material={sphereMat} />;
 }
