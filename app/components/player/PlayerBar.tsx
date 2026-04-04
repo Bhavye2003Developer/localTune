@@ -16,6 +16,8 @@ interface PlayerBarProps {
   onToggleLib: () => void;
   queueOpen: boolean;
   onToggleQueue: () => void;
+  onOpenNowPlaying: () => void;
+  onOpenShortcuts: () => void;
 }
 
 function LoopIcon({ mode }: { mode: LoopMode }) {
@@ -23,7 +25,7 @@ function LoopIcon({ mode }: { mode: LoopMode }) {
   return <Repeat size={15} />;
 }
 
-export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: PlayerBarProps) {
+export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue, onOpenNowPlaying, onOpenShortcuts }: PlayerBarProps) {
   const {
     state,
     togglePlay, seek, next, prev,
@@ -233,29 +235,33 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: Pl
           <Library size={16} />
         </button>
 
-        {/* Album art thumbnail */}
-        <div className="w-10 h-10 rounded flex-shrink-0 overflow-hidden bg-white/8 flex items-center justify-center">
-          {track?.coverUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={track.coverUrl} alt="cover" className="w-full h-full object-cover" />
-          ) : (
-            <Music size={14} className="text-white/25" />
-          )}
-        </div>
-
-        {/* Track title + artist */}
-        <div className="flex-1 min-w-0">
-          {track ? (
-            <>
-              <p className="text-white/85 text-sm truncate leading-tight">{track.title}</p>
-              <p className="text-white/35 text-[11px] truncate">
-                {track.artist || track.name}
-              </p>
-            </>
-          ) : (
-            <p className="text-white/20 text-sm">No track loaded</p>
-          )}
-        </div>
+        {/* Album art + track info — click to open Now Playing */}
+        <button
+          onClick={track ? onOpenNowPlaying : undefined}
+          disabled={!track}
+          className="flex items-center gap-2 min-w-0 flex-1 text-left disabled:cursor-default group/info"
+        >
+          <div className="w-10 h-10 rounded flex-shrink-0 overflow-hidden bg-white/8 flex items-center justify-center">
+            {track?.coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={track.coverUrl} alt="cover" className="w-full h-full object-cover" />
+            ) : (
+              <Music size={14} className="text-white/25" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            {track ? (
+              <>
+                <p className="text-white/85 text-sm truncate leading-tight group-hover/info:text-white transition-colors">{track.title}</p>
+                <p className="text-white/35 text-[11px] truncate">
+                  {track.artist || track.name}
+                </p>
+              </>
+            ) : (
+              <p className="text-white/20 text-sm">No track loaded</p>
+            )}
+          </div>
+        </button>
 
         {/* ── Center: Transport + time ──────────────────────────────────────── */}
         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -353,6 +359,15 @@ export function PlayerBar({ libOpen, onToggleLib, queueOpen, onToggleQueue }: Pl
           }`}
         >
           <ListMusic size={15} />
+        </button>
+
+        {/* Shortcuts help */}
+        <button
+          onClick={onOpenShortcuts}
+          title="Keyboard shortcuts (?)"
+          className="p-1.5 rounded text-white/25 hover:text-white/60 transition-colors flex-shrink-0 text-xs font-mono"
+        >
+          ?
         </button>
 
         {/* ── A-B loop controls (collapsed to a button group) ───────────────── */}
