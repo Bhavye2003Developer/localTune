@@ -51,6 +51,7 @@ export interface PlayerState {
   shuffleMode: ShuffleMode;
   loopMode: LoopMode;
   musicalKey: number;
+  history: string[];
 }
 
 export const INITIAL: PlayerState = {
@@ -69,6 +70,7 @@ export const INITIAL: PlayerState = {
   shuffleMode: 'off',
   loopMode: 'off',
   musicalKey: 8,
+  history: [],
 };
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -96,7 +98,8 @@ type Action =
   | { type: 'CYCLE_SHUFFLE' }
   | { type: 'CYCLE_LOOP_MODE' }
   | { type: 'SET_KEY'; key: number }
-  | { type: 'TRACK_ENDED' };
+  | { type: 'TRACK_ENDED' }
+  | { type: 'PUSH_HISTORY'; id: string };
 
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -119,8 +122,13 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
         tracks: state.tracks.map(t => t.id === action.id ? { ...t, ...action.patch } : t),
       };
 
-    case 'PLAY_NOW':
-      return { ...state, queue: [action.id], queuePos: 0, playing: true, position: 0 };
+    case 'PLAY_NOW': {
+      const currentId = state.queue[state.queuePos];
+      const newHistory = currentId
+        ? [...state.history, currentId].slice(-50)
+        : state.history;
+      return { ...state, queue: [action.id], queuePos: 0, playing: true, position: 0, history: newHistory };
+    }
 
     case 'PLAY_NEXT': {
       const insertAt = state.queuePos + 1;
@@ -155,14 +163,23 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
     }
 
     case 'NEXT_TRACK': {
+      const currentId = state.queue[state.queuePos];
+      const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
       const next = state.queuePos + 1;
-      if (next < state.queue.length) return { ...state, queuePos: next, playing: true, position: 0 };
-      if (state.loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0 };
-      return { ...state, playing: false };
+      if (next < state.queue.length) return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
+      if (state.loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
+      return { ...state, playing: false, history: newHistory };
     }
 
     case 'PREV_TRACK': {
-      if (state.queuePos > 0) return { ...state, queuePos: state.queuePos - 1, playing: true, position: 0 };
+      if (state.queuePos > 0) {
+        return { ...state, queuePos: state.queuePos - 1, playing: true, position: 0 };
+      }
+      if (state.history.length > 0) {
+        const prev = state.history[state.history.length - 1];
+        const newHistory = state.history.slice(0, -1);
+        return { ...state, queue: [prev, ...state.queue], queuePos: 0, playing: true, position: 0, history: newHistory };
+      }
       return state;
     }
 
@@ -218,10 +235,17 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
     case 'TRACK_ENDED': {
       const { loopMode, queuePos, queue } = state;
       if (loopMode === 'track') return { ...state, playing: true, position: 0 };
+      const currentId = queue[queuePos];
+      const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
       const next = queuePos + 1;
-      if (next < queue.length) return { ...state, queuePos: next, playing: true, position: 0 };
-      if (loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0 };
-      return { ...state, playing: false };
+      if (next < queue.length) return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
+      if (loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
+      return { ...state, playing: false, history: newHistory };
+    }
+
+    case 'PUSH_HISTORY': {
+      const newHistory = [...state.history, action.id].slice(-50);
+      return { ...state, history: newHistory };
     }
 
     default:
