@@ -149,9 +149,9 @@
 | `S` | Shuffle toggle | ✅ |
 | `F` | Full-screen visualizer | ❌ |
 | `V` | Cycle visualizer mode | ❌ |
-| `E` | Toggle EQ panel | ❌ |
-| `C` | Toggle chord timeline | ❌ |
-| `B` | Toggle metronome | ❌ |
+| `E` | Toggle EQ panel | ❌ Deferred — next session (Feature 2 not built) |
+| `C` | Toggle chord timeline | ❌ Deferred — next session (Feature 4 not built) |
+| `B` | Toggle metronome | ❌ Deferred — next session (Feature 5 not built) |
 | `A` | Set A loop point | ❌ |
 | `/` | Focus search | ❌ |
 | `?` | Show shortcuts overlay | ❌ |
@@ -193,10 +193,10 @@
 - [x] `OrbitControls` (pan disabled, zoom disabled)
 - [x] iOS detection — reduced particles, antialiasing off, DPR 1
 - [x] Musical key picker UI (12 buttons, top-right)
-- [ ] Terrain mode (3D mountain range, camera auto-fly)
-- [ ] Scope mode (dual-channel oscilloscope, CRT phosphor shader)
 - [ ] Album Color Mode (dominant color from cover art → particle palette)
 - [ ] Bloom post-processing (currently no `@react-three/postprocessing` pass active)
+
+> Note: Terrain mode and Scope mode removed from spec — not needed.
 
 ---
 
