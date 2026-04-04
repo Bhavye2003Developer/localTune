@@ -220,4 +220,25 @@ describe('reducer — history buffer', () => {
     const next = reducer(s, { type: 'PLAY_NOW', id: 'b' });
     expect(next.history).toEqual(['a']);
   });
+
+  it('NEXT_TRACK records current track in history when advancing', () => {
+    const s = { ...INITIAL, queue: ['a', 'b'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'NEXT_TRACK' });
+    expect(next.history).toEqual(['a']);
+    expect(next.queuePos).toBe(1);
+  });
+
+  it('TRACK_ENDED records current track in history when advancing', () => {
+    const s = { ...INITIAL, queue: ['a', 'b'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'TRACK_ENDED' });
+    expect(next.history).toEqual(['a']);
+    expect(next.queuePos).toBe(1);
+  });
+
+  it('NEXT_TRACK does not push history when queue exhausted and loop off', () => {
+    const s = { ...INITIAL, queue: ['a'], queuePos: 0, history: [] };
+    const next = reducer(s, { type: 'NEXT_TRACK' });
+    expect(next.history).toEqual([]);
+    expect(next.playing).toBe(false);
+  });
 });

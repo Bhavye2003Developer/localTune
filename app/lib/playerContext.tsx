@@ -164,11 +164,16 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
 
     case 'NEXT_TRACK': {
       const currentId = state.queue[state.queuePos];
-      const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
       const next = state.queuePos + 1;
-      if (next < state.queue.length) return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
-      if (state.loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
-      return { ...state, playing: false, history: newHistory };
+      if (next < state.queue.length) {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
+      }
+      if (state.loopMode === 'queue') {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
+      }
+      return { ...state, playing: false }; // no transition — do not push history
     }
 
     case 'PREV_TRACK': {
@@ -236,11 +241,16 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
       const { loopMode, queuePos, queue } = state;
       if (loopMode === 'track') return { ...state, playing: true, position: 0 };
       const currentId = queue[queuePos];
-      const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
       const next = queuePos + 1;
-      if (next < queue.length) return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
-      if (loopMode === 'queue') return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
-      return { ...state, playing: false, history: newHistory };
+      if (next < queue.length) {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: next, playing: true, position: 0, history: newHistory };
+      }
+      if (loopMode === 'queue') {
+        const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+        return { ...state, queuePos: 0, playing: true, position: 0, history: newHistory };
+      }
+      return { ...state, playing: false }; // queue ended — do not push history
     }
 
     case 'PUSH_HISTORY': {
