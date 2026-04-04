@@ -532,12 +532,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const next = useCallback(() => dispatch({ type: 'NEXT_TRACK' }), []);
 
   const prev = useCallback(() => {
-    const { queuePos } = stateRef.current;
-    if (queuePos > 0) {
-      dispatch({ type: 'PREV_TRACK' });
-    } else if (audioEl) {
-      audioEl.currentTime = 0;
-    }
+    dispatch({ type: 'PREV_TRACK' });
   }, []);
 
   const setVolume     = useCallback((v: number) => dispatch({ type: 'SET_VOLUME', volume: v }), []);
