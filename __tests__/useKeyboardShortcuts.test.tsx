@@ -111,3 +111,69 @@ describe('useKeyboardShortcuts', () => {
     expect(spy).toHaveBeenCalledWith('keydown', expect.any(Function));
   });
 });
+
+describe('useKeyboardShortcuts — new shortcuts', () => {
+  const mockActions = {
+    togglePlay: vi.fn(),
+    seek: vi.fn(),
+    next: vi.fn(),
+    prev: vi.fn(),
+    setVolume: vi.fn(),
+    toggleMute: vi.fn(),
+    cycleLoopMode: vi.fn(),
+    cycleShuffle: vi.fn(),
+    cycleVizMode: vi.fn(),
+    setLoopA: vi.fn(),
+    state: { volume: 0.5, muted: false },
+  };
+
+  const mockAudioEl = { currentTime: 30, duration: 180 } as HTMLAudioElement;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(playerContext.usePlayer).mockReturnValue(mockActions as ReturnType<typeof playerContext.usePlayer>);
+    vi.mocked(playerContext.getAudioEl).mockReturnValue(mockAudioEl);
+  });
+
+  it('a fires setLoopA', () => {
+    const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn() };
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey('a');
+    expect(mockActions.setLoopA).toHaveBeenCalledOnce();
+  });
+
+  it('v fires cycleVizMode', () => {
+    const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn() };
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey('v');
+    expect(mockActions.cycleVizMode).toHaveBeenCalledOnce();
+  });
+
+  it('? fires onOpenShortcuts callback', () => {
+    const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn() };
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey('?');
+    expect(opts.onOpenShortcuts).toHaveBeenCalledOnce();
+  });
+
+  it('/ fires focusSearch callback', () => {
+    const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn() };
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey('/');
+    expect(opts.focusSearch).toHaveBeenCalledOnce();
+  });
+
+  it('f toggles fullscreen (calls requestFullscreen)', () => {
+    const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn() };
+    const mockRequestFullscreen = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      value: mockRequestFullscreen, configurable: true,
+    });
+    Object.defineProperty(document, 'fullscreenElement', {
+      value: null, configurable: true,
+    });
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey('f');
+    expect(mockRequestFullscreen).toHaveBeenCalledOnce();
+  });
+});
