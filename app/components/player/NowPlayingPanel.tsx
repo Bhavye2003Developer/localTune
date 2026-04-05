@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Music } from 'lucide-react';
 import { type Track, formatTime } from '../../lib/playerContext';
+import { TacticalBrackets } from '../ui/TacticalBrackets';
 
 interface Props {
   track: Track;
@@ -15,8 +15,8 @@ const FORMAT_MAP: Record<string, string> = {
   'audio/wav': 'WAV',
   'audio/aac': 'AAC',
   'audio/mp4': 'M4A',
-  'audio/webm': 'WebM',
-  'video/webm': 'WebM',
+  'audio/webm': 'WEBM',
+  'video/webm': 'WEBM',
   'audio/ogg': 'OGG',
   'audio/opus': 'OPUS',
   'audio/x-aiff': 'AIFF',
@@ -44,7 +44,7 @@ export function NowPlayingPanel({ track, onClose }: Props) {
         const { default: ColorThief } = await import('color-thief-browser');
         const ct = new ColorThief();
         const [r, g, b] = ct.getColor(img);
-        setBgColor(`radial-gradient(ellipse at center, rgba(${r},${g},${b},0.45) 0%, rgba(0,0,0,0.95) 70%)`);
+        setBgColor(`radial-gradient(ellipse at center, rgba(${r},${g},${b},0.3) 0%, var(--nx-bg-panel) 70%)`);
       } catch {
         setBgColor('');
       }
@@ -60,53 +60,77 @@ export function NowPlayingPanel({ track, onClose }: Props) {
 
   return (
     <div
-      className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-md"
+      className="absolute inset-0 z-40 flex items-center justify-center"
+      style={{ background: 'rgba(0,10,14,0.85)', backdropFilter: 'blur(8px)' }}
       onPointerDown={onClose}
     >
       <div
-        className="relative rounded-none sm:rounded-2xl overflow-hidden w-full sm:w-80 max-h-full overflow-y-auto shadow-2xl border-0 sm:border border-white/10"
-        style={{ background: bgColor || 'rgba(10,10,10,0.97)' }}
+        className="relative overflow-hidden w-full sm:w-80 max-h-full overflow-y-auto nx-scanline-overlay"
+        style={{
+          background: bgColor || 'var(--nx-bg-panel)',
+          border: '1px solid var(--nx-border-active)',
+        }}
         onPointerDown={e => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 text-white/30 hover:text-white/70 transition-colors"
-        >
-          <X size={16} />
-        </button>
+        <TacticalBrackets color="rgba(0,212,255,0.4)" size={14} thickness={1.5} />
+
+        {/* Header */}
+        <div className="px-4 pt-4 pb-2 flex items-center justify-between" style={{ borderBottom: '1px solid var(--nx-border)' }}>
+          <span className="font-mono uppercase tracking-widest text-[9px]" style={{ color: 'var(--nx-cyan-dim)' }}>
+            ◈ NOW BROADCASTING
+          </span>
+          <button
+            onClick={onClose}
+            className="font-mono text-[10px] transition-colors touch-manipulation"
+            style={{ color: 'var(--nx-text-dim)' }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-red)'; }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
+          >
+            ✕
+          </button>
+        </div>
 
         {/* Album art */}
-        <div className="flex justify-center pt-8 pb-4 px-8">
-          <div className="w-40 h-40 rounded-xl overflow-hidden bg-white/8 flex items-center justify-center shadow-xl">
+        <div className="flex justify-center pt-6 pb-4 px-8">
+          <div
+            className="w-40 h-40 overflow-hidden flex items-center justify-center"
+            style={{ border: '1px solid var(--nx-border-active)', background: 'var(--nx-bg-raised)' }}
+          >
             {track.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img ref={imgRef} src={track.coverUrl} alt="cover" className="w-full h-full object-cover" />
             ) : (
-              <Music size={40} className="text-white/20" />
+              <span className="font-mono text-4xl" style={{ color: 'var(--nx-cyan-dim)' }}>♪</span>
             )}
           </div>
         </div>
 
         {/* Metadata */}
         <div className="px-6 pb-6 text-center">
-          <p className="text-white/90 text-base font-semibold leading-tight truncate">{track.title}</p>
+          <p className="text-base font-semibold leading-tight truncate" style={{ color: 'var(--nx-text)' }}>
+            {track.title}
+          </p>
           {track.artist && (
-            <p className="text-white/50 text-sm mt-0.5 truncate">{track.artist}</p>
+            <p className="font-mono text-[11px] mt-0.5 truncate" style={{ color: 'var(--nx-cyan-dim)' }}>
+              {track.artist}
+            </p>
           )}
           {track.album && (
-            <p className="text-white/30 text-xs mt-0.5 truncate">{track.album}</p>
+            <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: 'var(--nx-text-dim)' }}>
+              {track.album}
+            </p>
           )}
 
           {/* Badges */}
           <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
-            <span className="text-[10px] font-mono bg-white/8 border border-white/12 rounded px-2 py-0.5 text-white/50">
+            <span className="font-mono uppercase text-[9px] px-2 py-0.5" style={{ color: 'var(--nx-cyan)', border: '1px solid rgba(0,212,255,0.3)' }}>
               {formatLabel(track.type)}
             </span>
-            <span className="text-[10px] font-mono bg-white/8 border border-white/12 rounded px-2 py-0.5 text-white/50">
+            <span className="font-mono text-[9px] px-2 py-0.5" style={{ color: 'var(--nx-text-dim)', border: '1px solid var(--nx-border)' }}>
               {formatBytes(track.size)}
             </span>
             {track.duration > 0 && (
-              <span className="text-[10px] font-mono bg-white/8 border border-white/12 rounded px-2 py-0.5 text-white/50">
+              <span className="font-mono text-[9px] px-2 py-0.5" style={{ color: 'var(--nx-text-dim)', border: '1px solid var(--nx-border)' }}>
                 {formatTime(track.duration)}
               </span>
             )}
