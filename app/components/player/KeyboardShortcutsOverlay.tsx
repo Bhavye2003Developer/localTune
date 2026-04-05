@@ -21,7 +21,6 @@ const SHORTCUTS = [
   { key: '↑ / ↓', desc: 'Volume ±5%' },
   { section: 'View' },
   { key: 'F', desc: 'Toggle fullscreen' },
-  { key: 'V', desc: 'Cycle visualizer mode' },
   { key: 'E', desc: 'Toggle EQ' },
   { key: '/', desc: 'Focus search' },
   { key: '?', desc: 'Show this overlay' },

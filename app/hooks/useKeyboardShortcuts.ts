@@ -20,7 +20,7 @@ export function useKeyboardShortcuts(opts: ShortcutOpts = {}) {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
 
-      const { togglePlay, seek, next, prev, setVolume, toggleMute, cycleLoopMode, cycleShuffle, cycleVizMode, setLoopA, state } = playerRef.current;
+      const { togglePlay, seek, next, prev, setVolume, toggleMute, cycleLoopMode, cycleShuffle, setLoopA, state } = playerRef.current;
       const el = getAudioEl();
       const currentTime = el?.currentTime ?? 0;
       const { volume } = state;
@@ -59,9 +59,6 @@ export function useKeyboardShortcuts(opts: ShortcutOpts = {}) {
           break;
         case 'a':
           setLoopA();
-          break;
-        case 'v':
-          cycleVizMode();
           break;
         case 'e':
           optsRef.current.onToggleEQ?.();

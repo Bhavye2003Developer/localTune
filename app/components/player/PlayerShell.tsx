@@ -3,7 +3,6 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { PlayerProvider, usePlayer } from '../../lib/playerContext';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { VisualizerContainer } from '../visualizer/VisualizerContainer';
 import { FileDropZone } from './FileDropZone';
 import { TrackLibrary, type TrackLibraryHandle } from './TrackLibrary';
 import { PlayerBar } from './PlayerBar';
@@ -13,7 +12,7 @@ import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay';
 import { EQPanel } from '../eq/EQPanel';
 
 function PlayerInner() {
-  const { state, analyserNode, setKey, setEQBandGain, setEQBypass } = usePlayer();
+  const { state, setEQBandGain, setEQBypass } = usePlayer();
   const [libOpen, setLibOpen] = useState(true);
   const [queueOpen, setQueueOpen] = useState(false);
   const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
@@ -47,17 +46,8 @@ function PlayerInner() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black flex flex-col">
-      {/* ── Full-screen visualizer (grows to fill space above bottom bar) ── */}
+      {/* ── Main area (grows to fill space above bottom bar) ── */}
       <div className="flex-1 relative min-h-0">
-        <div className="absolute inset-0">
-          <VisualizerContainer
-            analyserNode={analyserNode}
-            musicalKey={state.musicalKey}
-            onKeyChange={setKey}
-            vizMode={state.vizMode}
-            coverUrl={currentTrack?.coverUrl ?? ''}
-          />
-        </div>
 
         {/* ── Library panel
              Mobile: full-screen overlay over the visualizer
