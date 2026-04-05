@@ -1,36 +1,120 @@
 @import "tailwindcss";
 
+/* ── NEXUS-7 Design Tokens ──────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --nx-bg-deep:       #000a0e;
+  --nx-bg-panel:      #020f14;
+  --nx-bg-raised:     #041520;
+  --nx-cyan:          #00d4ff;
+  --nx-cyan-dim:      #004d5c;
+  --nx-red:           #ff003c;
+  --nx-text:          #c8e8f0;
+  --nx-text-dim:      #3d6070;
+  --nx-border:        rgba(0, 212, 255, 0.12);
+  --nx-border-active: rgba(0, 212, 255, 0.6);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--nx-bg-deep);
+  --color-foreground: var(--nx-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ── Base ───────────────────────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--nx-bg-deep);
+  color: var(--nx-text);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* iOS safe-area utility — used on fixed bottom bars */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* ── iOS safe-area ──────────────────────────────────────────────────────────── */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Prevent pull-to-refresh / overscroll on mobile */
-html, body {
-  overscroll-behavior: none;
+/* ── Dot-grid background ────────────────────────────────────────────────────── */
+.nx-dot-grid {
+  background-image: radial-gradient(circle, rgba(0, 212, 255, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@media (max-width: 639px) {
+  .nx-dot-grid {
+    background-image: radial-gradient(circle, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  }
+}
+
+/* ── Clip-path panel (diagonal top-right cut) ───────────────────────────────── */
+.nx-clip-panel {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 2px; height: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.25); }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.5); }
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes nx-scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes nx-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes nx-glow-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(0, 212, 255, 0.3); }
+  50%      { box-shadow: 0 0 12px rgba(0, 212, 255, 0.7); }
+}
+
+@keyframes nx-flicker {
+  0%   { opacity: 0.2; }
+  40%  { opacity: 1; }
+  60%  { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* ── Animation utilities ────────────────────────────────────────────────────── */
+@utility animate-nx-blink {
+  animation: nx-blink 1.2s step-end infinite;
+}
+
+@utility animate-nx-glow-pulse {
+  animation: nx-glow-pulse 2s ease-in-out infinite;
+}
+
+@utility animate-nx-flicker {
+  animation: nx-flicker 120ms ease-out forwards;
+}
+
+/* ── Scanline overlay ───────────────────────────────────────────────────────── */
+.nx-scanline-overlay {
+  position: relative;
+  overflow: hidden;
+}
+.nx-scanline-overlay::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgba(0, 212, 255, 0.03), transparent);
+  animation: nx-scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Disable scanline on mobile */
+@media (max-width: 639px) {
+  .nx-scanline-overlay::after { display: none; }
 }

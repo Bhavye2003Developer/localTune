@@ -142,13 +142,6 @@ describe('useKeyboardShortcuts — new shortcuts', () => {
     expect(mockActions.setLoopA).toHaveBeenCalledOnce();
   });
 
-  it('v fires cycleVizMode', () => {
-    const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn() };
-    renderHook(() => useKeyboardShortcuts(opts));
-    fireKey('v');
-    expect(mockActions.cycleVizMode).toHaveBeenCalledOnce();
-  });
-
   it('? fires onOpenShortcuts callback', () => {
     const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn() };
     renderHook(() => useKeyboardShortcuts(opts));

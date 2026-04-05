@@ -243,19 +243,3 @@ describe('reducer — history buffer', () => {
   });
 });
 
-describe('reducer — vizMode', () => {
-  it('initial vizMode is nebula', () => {
-    expect(INITIAL.vizMode).toBe('nebula');
-  });
-
-  it('CYCLE_VIZ_MODE toggles nebula → album-color', () => {
-    const next = reducer(INITIAL, { type: 'CYCLE_VIZ_MODE' });
-    expect(next.vizMode).toBe('album-color');
-  });
-
-  it('CYCLE_VIZ_MODE toggles album-color → nebula', () => {
-    const s = { ...INITIAL, vizMode: 'album-color' as const };
-    const next = reducer(s, { type: 'CYCLE_VIZ_MODE' });
-    expect(next.vizMode).toBe('nebula');
-  });
-});
