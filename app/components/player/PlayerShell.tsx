@@ -45,7 +45,7 @@ function PlayerInner() {
   );
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-black flex flex-col">
+    <div className="relative w-screen h-screen overflow-hidden flex flex-col nx-dot-grid" style={{ background: 'var(--nx-bg-deep)' }}>
       {/* ── Main area (grows to fill space above bottom bar) ── */}
       <div className="flex-1 relative min-h-0">
 
@@ -55,12 +55,13 @@ function PlayerInner() {
         {showLib && (
           <div className="
             absolute left-0 top-0 bottom-0 z-20
-            flex flex-col select-none
-            bg-black/90 backdrop-blur-xl border-r border-white/8
-            w-full sm:w-72
-          ">
-            <div className="px-3 pt-3 pb-1 text-white/60 text-xs font-semibold tracking-wide">
-              Library
+            flex flex-col select-none nx-scanline-overlay
+            border-r w-full sm:w-72
+          " style={{ background: 'var(--nx-bg-panel)', borderColor: 'var(--nx-border)' }}>
+            <div className="px-3 pt-3 pb-1 flex items-center justify-between">
+              <span className="font-mono uppercase tracking-widest text-[9px]" style={{ color: 'var(--nx-cyan-dim)' }}>
+                ◈ INTEL DATABASE
+              </span>
             </div>
             <FileDropZone />
             <TrackLibrary ref={searchRef} />
