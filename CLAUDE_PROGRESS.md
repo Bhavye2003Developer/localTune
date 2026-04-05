@@ -1,6 +1,6 @@
 # FineTune — Claude Build Progress
 
-## Current Status: Feature 2 (EQ) — Complete. WebGL Visualizer removed.
+## Current Status: NEXUS-7 UI Revamp — Complete. All panels tactical-redesigned.
 
 ---
 
@@ -67,12 +67,32 @@ TerrainScene, ScopeScene, and NebulaScene all create their Three.js objects at m
 
 ---
 
+## NEXUS-7 UI System
+
+Military-grade cybergenetic aesthetic. Design tokens in `app/globals.css` (`--nx-*` variables).
+
+| Component | Status | Notes |
+|---|---|---|
+| `globals.css` | ✅ Done | NEXUS-7 design tokens, dot-grid, scanline, 4 keyframe animations |
+| `TacticalBrackets.tsx` | ✅ Done | Reusable corner bracket decoration |
+| `PlayerShell.tsx` | ✅ Done | Root bg, library panel |
+| `TrackLibrary.tsx` | ✅ Done | Intel Database — T-001 index, virtual list, context menu |
+| `FileDropZone.tsx` | ✅ Done | RECEIVING PAYLOAD drag state, TacticalBrackets |
+| `PlayerBar.tsx` | ✅ Done | Command Console — clip-path play btn, RAF progress bar |
+| `EQCurve.tsx` | ✅ Done | Cyan curve, crosshair on active dot, red active dot |
+| `EQPanel.tsx` | ✅ Done | Signal Processor header, BYPASS/FLAT/preset chips in monospace |
+| `QueueSidebar.tsx` | ✅ Done | Mission Queue — [01][02] indexed rows, TacticalBrackets empty state |
+| `NowPlayingPanel.tsx` | ✅ Done | Now Broadcasting — TacticalBrackets, sharp cover art |
+| `KeyboardShortcutsOverlay.tsx` | ✅ Done | Command Reference — tactical table, cyan kbd badges |
+
+---
+
 ## Feature Build Status
 
 | #   | Feature                                     | Status                                 |
 | --- | ------------------------------------------- | -------------------------------------- |
 | 1   | WebGL Visualizer                            | ❌ Removed — caused app-wide lag       |
-| 2   | 10-Band Parametric EQ                       | ✅ Complete — 153 tests passing        |
+| 2   | 10-Band Parametric EQ                       | ✅ Complete — 98 tests passing         |
 | 3   | BPM + Key + Mood Analysis                   | ⬜ Not started                         |
 | 4   | Chord Detection + Timeline                  | ⬜ Not started                         |
 | 5   | BPM-Synced Metronome                        | ⬜ Not started                         |
