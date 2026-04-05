@@ -41,9 +41,8 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
     db.eqPresets.toArray().then(setCustomPresets).catch(() => {});
   }, [open]);
 
-  const loadPreset = useCallback((gains: number[], name: string) => {
-    dispatch({ type: 'LOAD_PRESET', gains, name });
-    // useEffect on state.bands handles syncing gains to audio nodes
+  const togglePreset = useCallback((gains: number[], name: string) => {
+    dispatch({ type: 'TOGGLE_PRESET', gains, name });
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -52,7 +51,7 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
     const entry = { name, bands: state.bands.map(b => ({ freq: b.freq, gain: b.gain, q: b.q })) };
     await db.eqPresets.add(entry);
     setCustomPresets(prev => [...prev, entry]);
-    dispatch({ type: 'SET_PRESET_NAME', name });
+    dispatch({ type: 'LOAD_PRESET', gains: state.bands.map(b => b.gain), name });
     setSaving(false);
     setSaveName('');
   }, [saveName, state.bands]);
@@ -63,6 +62,8 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
   }, [handleSave]);
 
   if (!open) return null;
+
+  const activeCount = state.activePresets.length;
 
   return (
     <div className="flex flex-col gap-2 px-3 py-2 h-full">
@@ -84,15 +85,35 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
           Bypass
         </button>
 
+        {/* Active count badge */}
+        {activeCount > 1 && (
+          <span className="text-[10px] bg-violet-500/20 border border-violet-500/40 text-violet-300 rounded px-1.5 py-0.5 font-mono">
+            {activeCount} active
+          </span>
+        )}
+
+        {/* Flat / reset button */}
+        <button
+          aria-label="Reset to flat"
+          onClick={() => dispatch({ type: 'RESET_FLAT' })}
+          className={`px-2 py-0.5 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
+            state.activePresets.length === 0
+              ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
+              : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
+          }`}
+        >
+          Flat
+        </button>
+
         {/* Preset chips — horizontal scroll on mobile, wrap on desktop */}
         <div className="flex gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible pb-0.5 sm:pb-0 max-w-full">
-          {BUILTIN_PRESETS.map(p => (
+          {BUILTIN_PRESETS.filter(p => p.name !== 'Flat').map(p => (
             <button
               key={p.name}
               aria-label={p.name}
-              onClick={() => loadPreset(p.gains, p.name)}
+              onClick={() => togglePreset(p.gains, p.name)}
               className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
-                state.presetName === p.name
+                state.activePresets.includes(p.name)
                   ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
                   : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
               }`}
@@ -104,9 +125,9 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
             <button
               key={p.id ?? p.name}
               aria-label={p.name}
-              onClick={() => loadPreset(p.bands.map(b => b.gain), p.name)}
+              onClick={() => togglePreset(p.bands.map(b => b.gain), p.name)}
               className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
-                state.presetName === p.name
+                state.activePresets.includes(p.name)
                   ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
                   : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
               }`}

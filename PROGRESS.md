@@ -1,7 +1,7 @@
 # FineTune V1 — Build Progress
 
 > Spec source: `FineTune_V1_Spec-1.md`
-> Last updated: 2026-04-05 (session 6 — mobile responsiveness)
+> Last updated: 2026-04-05 (session 7 — EQ multi-preset + saved configs)
 
 ---
 
@@ -222,6 +222,9 @@
 - [x] Full EQ bypass (zeros all gains, restores on un-bypass — no audio click)
 - [x] EQ drawer slides above PlayerBar (`h-[210px]`, `bottom: 3.5rem`, CSS transition)
 - [x] `E` keyboard shortcut toggles EQ panel
+- [x] Multi-preset selection — multiple preset chips active simultaneously; gains are summed (clamped ±15 dB)
+- [x] Per-preset saved configs — manual band tweaks saved per active preset combination; restored when you return to the same preset(s)
+- [x] "Flat" is now a dedicated reset button; all other presets are toggleable
 
 ---
 

@@ -63,22 +63,50 @@ describe('EQPanel', () => {
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
-  it('renders built-in preset chips', () => {
+  it('renders built-in preset chips (excluding Flat)', () => {
     render(<EQPanel {...defaultProps} />);
-    expect(screen.getByRole('button', { name: 'Flat' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Bass Boost' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Acoustic' })).toBeInTheDocument();
+    // Flat is now a standalone Reset button
+    expect(screen.getByRole('button', { name: /reset to flat/i })).toBeInTheDocument();
   });
 
-  it('clicking a preset chip loads the preset', () => {
+  it('clicking a preset chip loads the preset gains', () => {
     render(<EQPanel {...defaultProps} />);
-    // Clear calls from initial mount sync
     defaultProps.setEQBandGain.mockClear();
-    const bassBoost = screen.getByRole('button', { name: 'Bass Boost' });
-    fireEvent.click(bassBoost);
-    // setEQBandGain should be called once per band
+    fireEvent.click(screen.getByRole('button', { name: 'Bass Boost' }));
     expect(defaultProps.setEQBandGain).toHaveBeenCalledTimes(10);
-    // Bass Boost band 0 = +6 dB
     expect(defaultProps.setEQBandGain).toHaveBeenCalledWith(0, 6);
+  });
+
+  it('clicking same preset twice deactivates it and returns to flat', () => {
+    render(<EQPanel {...defaultProps} />);
+    defaultProps.setEQBandGain.mockClear();
+    const chip = screen.getByRole('button', { name: 'Bass Boost' });
+    fireEvent.click(chip); // activate
+    fireEvent.click(chip); // deactivate
+    // Last call should be all-zero (flat)
+    const lastCalls = defaultProps.setEQBandGain.mock.calls.slice(-10);
+    lastCalls.forEach(([, gain]) => expect(gain).toBe(0));
+  });
+
+  it('clicking two preset chips makes both active and sums gains', () => {
+    render(<EQPanel {...defaultProps} />);
+    defaultProps.setEQBandGain.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Bass Boost' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Acoustic' }));
+    // Band 0: Bass Boost[0]=6, Acoustic[0]=2 → 8
+    expect(defaultProps.setEQBandGain).toHaveBeenCalledWith(0, 8);
+  });
+
+  it('clicking Flat reset button deactivates all presets and zeros bands', () => {
+    render(<EQPanel {...defaultProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Bass Boost' }));
+    defaultProps.setEQBandGain.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: /reset to flat/i }));
+    // All bands should be 0
+    const lastCalls = defaultProps.setEQBandGain.mock.calls.slice(-10);
+    lastCalls.forEach(([, gain]) => expect(gain).toBe(0));
   });
 
   it('renders Save button', () => {
