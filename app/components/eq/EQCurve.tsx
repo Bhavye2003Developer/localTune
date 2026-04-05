@@ -186,11 +186,11 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
       onPointerLeave={onPointerUp}
     >
       {/* Static grid — never re-renders */}
-      <g stroke="#333" strokeWidth="0.5">
+      <g stroke="rgba(0,212,255,0.12)" strokeWidth="0.5">
         {GRID_LINES_H}
         {GRID_LINES_V}
       </g>
-      <g fill="#666" fontSize="9" fontFamily="monospace">
+      <g fill="rgba(0,212,255,0.45)" fontSize="9" fontFamily="monospace">
         {GRID_LABELS_H}
         {GRID_LABELS_V}
       </g>
@@ -198,14 +198,14 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
       {/* Curve group — dims and locks when bypassed */}
       <g
         data-testid="eq-curve-group"
-        opacity={bypass ? '0.3' : '1'}
+        opacity={bypass ? '0.2' : '1'}
         pointerEvents={bypass ? 'none' : undefined}
       >
         {/* Filled area */}
         <path
           data-testid="eq-area"
           d={areaPath}
-          fill="rgba(124,58,237,0.15)"
+          fill="rgba(0,212,255,0.08)"
           stroke="none"
         />
         {/* Curve line */}
@@ -213,7 +213,7 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
           data-testid="eq-curve"
           d={linePath}
           fill="none"
-          stroke="#7c3aed"
+          stroke="#00d4ff"
           strokeWidth="1.5"
         />
 
@@ -222,13 +222,20 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
           const isActive = activeDot === i;
           return (
             <g key={i}>
+              {/* Crosshair lines on active dot */}
+              {isActive && (
+                <>
+                  <line x1={PAD_L} x2={W - PAD_R} y1={y} y2={y} stroke="rgba(255,0,60,0.3)" strokeWidth="0.5" strokeDasharray="3 3" />
+                  <line x1={x} x2={x} y1={PAD_T} y2={H - PAD_B} stroke="rgba(255,0,60,0.3)" strokeWidth="0.5" strokeDasharray="3 3" />
+                </>
+              )}
               <circle
                 data-band={i}
                 cx={x}
                 cy={y}
-                r={isActive ? 8 : 6}
-                fill={isActive ? '#7c3aed' : '#a78bfa'}
-                stroke="#fff"
+                r={isActive ? 7 : 5}
+                fill={isActive ? '#ff003c' : 'rgba(0,212,255,0.25)'}
+                stroke={isActive ? '#ff003c' : '#00d4ff'}
                 strokeWidth="1.5"
                 style={{ cursor: bypass ? 'default' : 'ns-resize', touchAction: 'none' }}
                 onPointerDown={e => onPointerDown(e, i)}
@@ -237,10 +244,10 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
               {isActive && (
                 <text
                   x={x}
-                  y={y - 12}
+                  y={y - 11}
                   textAnchor="middle"
-                  fill="#c4b5fd"
-                  fontSize="10"
+                  fill="#00d4ff"
+                  fontSize="9"
                   fontFamily="monospace"
                 >
                   {gain >= 0 ? `+${gain.toFixed(1)}` : gain.toFixed(1)}

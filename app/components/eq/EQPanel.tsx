@@ -66,29 +66,32 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
   const activeCount = state.activePresets.length;
 
   return (
-    <div className="flex flex-col gap-2 px-3 py-2 h-full">
+    <div className="flex flex-col gap-1.5 px-3 py-2 h-full">
       {/* Header */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-semibold text-white tracking-wide">EQ</span>
+        <span className="font-mono uppercase tracking-widest text-[9px] shrink-0" style={{ color: 'var(--nx-cyan-dim)' }}>
+          ◈ SIGNAL PROCESSOR
+        </span>
 
         {/* Bypass toggle */}
         <button
           aria-label={state.bypass ? 'bypass on' : 'bypass off'}
           aria-pressed={state.bypass}
           onClick={() => dispatch({ type: 'TOGGLE_BYPASS' })}
-          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
-            state.bypass
-              ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
-              : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
-          }`}
+          className="font-mono uppercase tracking-widest text-[9px] px-2 py-0.5 transition-colors touch-manipulation"
+          style={{
+            border: `1px solid ${state.bypass ? 'var(--nx-red)' : 'rgba(0,212,255,0.2)'}`,
+            color: state.bypass ? 'var(--nx-red)' : 'var(--nx-text-dim)',
+            background: state.bypass ? 'rgba(255,0,60,0.08)' : 'transparent',
+          }}
         >
-          Bypass
+          BYPASS
         </button>
 
         {/* Active count badge */}
         {activeCount > 1 && (
-          <span className="text-[10px] bg-violet-500/20 border border-violet-500/40 text-violet-300 rounded px-1.5 py-0.5 font-mono">
-            {activeCount} active
+          <span className="font-mono text-[9px] px-1.5 py-0.5 shrink-0" style={{ color: 'var(--nx-cyan)', border: '1px solid rgba(0,212,255,0.3)' }}>
+            {activeCount} ACTIVE
           </span>
         )}
 
@@ -96,13 +99,14 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
         <button
           aria-label="Reset to flat"
           onClick={() => dispatch({ type: 'RESET_FLAT' })}
-          className={`px-2 py-0.5 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
-            state.activePresets.length === 0
-              ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
-              : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
-          }`}
+          className="font-mono uppercase tracking-widest text-[9px] px-2 py-0.5 transition-colors shrink-0 touch-manipulation"
+          style={{
+            border: `1px solid ${state.activePresets.length === 0 ? 'rgba(0,212,255,0.5)' : 'rgba(0,212,255,0.2)'}`,
+            color: state.activePresets.length === 0 ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
+            background: state.activePresets.length === 0 ? 'rgba(0,212,255,0.08)' : 'transparent',
+          }}
         >
-          Flat
+          FLAT
         </button>
 
         {/* Preset chips — horizontal scroll on mobile, wrap on desktop */}
@@ -112,11 +116,12 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
               key={p.name}
               aria-label={p.name}
               onClick={() => togglePreset(p.gains, p.name)}
-              className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
-                state.activePresets.includes(p.name)
-                  ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
-                  : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
-              }`}
+              className="font-mono uppercase tracking-widest text-[9px] px-2 py-1 transition-colors shrink-0 touch-manipulation"
+              style={{
+                border: `1px solid ${state.activePresets.includes(p.name) ? 'rgba(0,212,255,0.6)' : 'rgba(0,212,255,0.15)'}`,
+                color: state.activePresets.includes(p.name) ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
+                background: state.activePresets.includes(p.name) ? 'rgba(0,212,255,0.08)' : 'transparent',
+              }}
             >
               {p.name}
             </button>
@@ -126,11 +131,12 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
               key={p.id ?? p.name}
               aria-label={p.name}
               onClick={() => togglePreset(p.bands.map(b => b.gain), p.name)}
-              className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 touch-manipulation ${
-                state.activePresets.includes(p.name)
-                  ? 'bg-violet-600/40 border-violet-500/60 text-violet-200'
-                  : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80'
-              }`}
+              className="font-mono uppercase tracking-widest text-[9px] px-2 py-1 transition-colors shrink-0 touch-manipulation"
+              style={{
+                border: `1px solid ${state.activePresets.includes(p.name) ? 'rgba(0,212,255,0.6)' : 'rgba(0,212,255,0.15)'}`,
+                color: state.activePresets.includes(p.name) ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
+                background: state.activePresets.includes(p.name) ? 'rgba(0,212,255,0.08)' : 'transparent',
+              }}
             >
               {p.name}
             </button>
@@ -142,19 +148,28 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
           <input
             autoFocus
             type="text"
-            placeholder="Preset name…"
+            placeholder="preset name..."
             value={saveName}
             onChange={e => setSaveName(e.target.value)}
             onKeyDown={handleSaveKeyDown}
-            className="px-2 py-0.5 rounded text-xs bg-white/10 border border-white/20 text-white outline-none focus:border-violet-500 w-32"
+            className="font-mono text-[10px] px-2 py-0.5 bg-transparent outline-none w-32"
+            style={{
+              border: '1px solid rgba(0,212,255,0.3)',
+              color: 'var(--nx-text)',
+              caretColor: 'var(--nx-cyan)',
+            }}
           />
         ) : (
           <button
             aria-label="Save preset"
             onClick={() => setSaving(true)}
-            className="px-2 py-0.5 rounded text-xs bg-white/5 border border-white/10 text-white/50 hover:text-white/80 transition-colors ml-auto"
+            className="font-mono uppercase tracking-widest text-[9px] px-2 py-0.5 transition-colors ml-auto touch-manipulation"
+            style={{
+              border: '1px solid rgba(0,212,255,0.15)',
+              color: 'var(--nx-text-dim)',
+            }}
           >
-            Save
+            SAVE
           </button>
         )}
 
@@ -162,7 +177,10 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
         <button
           aria-label="Close EQ panel"
           onClick={onClose}
-          className="ml-auto text-white/40 hover:text-white/80 transition-colors text-base leading-none px-1"
+          className="font-mono text-[10px] px-1.5 py-0.5 transition-colors touch-manipulation"
+          style={{ color: 'var(--nx-text-dim)' }}
+          onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-red)'; }}
+          onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
         >
           ✕
         </button>

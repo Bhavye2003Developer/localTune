@@ -63,7 +63,7 @@ describe('EQCurve component', () => {
       <EQCurve state={INITIAL_EQ_STATE} dispatch={noop} />
     );
     const circles = container.querySelectorAll('circle[data-band]');
-    circles.forEach(c => expect(c.getAttribute('r')).toBe('6'));
+    circles.forEach(c => expect(c.getAttribute('r')).toBe('5'));
   });
 
   it('double-click on dot dispatches SET_BAND_GAIN with 0', () => {
@@ -82,7 +82,7 @@ describe('EQCurve component', () => {
       <EQCurve state={bypassState} dispatch={noop} />
     );
     const group = container.querySelector('[data-testid="eq-curve-group"]')!;
-    expect(group.getAttribute('opacity')).toBe('0.3');
+    expect(group.getAttribute('opacity')).toBe('0.2');
     expect(group.getAttribute('pointer-events')).toBe('none');
   });
 
@@ -91,7 +91,7 @@ describe('EQCurve component', () => {
       <EQCurve state={INITIAL_EQ_STATE} dispatch={noop} />
     );
     const area = container.querySelector('[data-testid="eq-area"]')!;
-    expect(area.getAttribute('fill')).toBe('rgba(124,58,237,0.15)');
+    expect(area.getAttribute('fill')).toBe('rgba(0,212,255,0.08)');
   });
 
   it('renders curve path with correct stroke', () => {
@@ -99,6 +99,6 @@ describe('EQCurve component', () => {
       <EQCurve state={INITIAL_EQ_STATE} dispatch={noop} />
     );
     const curve = container.querySelector('[data-testid="eq-curve"]')!;
-    expect(curve.getAttribute('stroke')).toBe('#7c3aed');
+    expect(curve.getAttribute('stroke')).toBe('#00d4ff');
   });
 });
