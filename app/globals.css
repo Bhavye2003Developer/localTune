@@ -83,6 +83,11 @@ html, body {
   100% { opacity: 1; }
 }
 
+@keyframes nx-bar-bounce {
+  0%   { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+
 /* ── Animation utilities ────────────────────────────────────────────────────── */
 @utility animate-nx-blink {
   animation: nx-blink 1.2s step-end infinite;

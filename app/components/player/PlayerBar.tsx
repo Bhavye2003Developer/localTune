@@ -82,6 +82,8 @@ export const PlayerBar = memo(function PlayerBar({
   const timeRef     = useRef<HTMLSpanElement>(null);
   const sysIdRef    = useRef<HTMLSpanElement>(null);
   const draggingRef = useRef(false);
+  const volRef      = useRef<HTMLDivElement>(null);
+  const volDragging = useRef(false);
   const prevTrackId = useRef<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; pct: number }>({
     visible: false, x: 0, pct: 0,
@@ -162,6 +164,25 @@ export const PlayerBar = memo(function PlayerBar({
     if (point === 'a') setLoopAAt(seconds); else setLoopBAt(seconds);
     setContextMenu(m => ({ ...m, visible: false }));
   }, [contextMenu.pct, duration, setLoopAAt, setLoopBAt]);
+
+  const setVolFromEvent = useCallback((e: globalThis.PointerEvent) => {
+    if (!volRef.current) return;
+    const rect = volRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setVolume(ratio);
+  }, [setVolume]);
+
+  const onVolPointerDown = useCallback((e: PointerEvent<HTMLDivElement>) => {
+    volDragging.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setVolFromEvent(e.nativeEvent);
+  }, [setVolFromEvent]);
+
+  const onVolPointerMove = useCallback((e: PointerEvent<HTMLDivElement>) => {
+    if (volDragging.current) setVolFromEvent(e.nativeEvent);
+  }, [setVolFromEvent]);
+
+  const onVolPointerUp = useCallback(() => { volDragging.current = false; }, []);
 
   const onSeekBarKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
@@ -357,11 +378,25 @@ export const PlayerBar = memo(function PlayerBar({
             style={{ color: 'var(--nx-text-dim)' }}>
             {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
           </button>
-          <input type="range" min={0} max={1} step={0.01}
-            value={muted ? 0 : volume}
-            onChange={e => setVolume(parseFloat(e.target.value))}
-            className="w-14 sm:w-16 cursor-pointer shrink-0"
-            style={{ accentColor: 'var(--nx-cyan)' }} />
+          {/* Custom volume scrubber */}
+          <div
+            ref={volRef}
+            className="relative w-14 sm:w-16 h-10 flex items-center cursor-pointer shrink-0 group"
+            onPointerDown={onVolPointerDown}
+            onPointerMove={onVolPointerMove}
+            onPointerUp={onVolPointerUp}
+          >
+            <div className="relative w-full h-[3px]" style={{ background: 'rgba(0,212,255,0.15)' }}>
+              <div
+                className="absolute top-0 left-0 h-full"
+                style={{ width: `${(muted ? 0 : volume) * 100}%`, background: 'var(--nx-cyan)' }}
+              />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ left: `calc(${(muted ? 0 : volume) * 100}% - 4px)`, background: 'var(--nx-cyan)' }}
+              />
+            </div>
+          </div>
 
           <NxBtn onClick={cycleShuffle} title={shuffleMode === 'off' ? 'Shuffle off' : 'Shuffle on'} active={shuffleMode !== 'off'}>
             <Shuffle size={13} />

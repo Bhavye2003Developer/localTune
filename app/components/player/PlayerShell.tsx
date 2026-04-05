@@ -10,6 +10,7 @@ import { QueueSidebar } from './QueueSidebar';
 import { NowPlayingPanel } from './NowPlayingPanel';
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay';
 import { EQPanel } from '../eq/EQPanel';
+import { NowPlayingStage } from './NowPlayingStage';
 
 function PlayerInner() {
   const { state, setEQBandGain, setEQBypass } = usePlayer();
@@ -48,6 +49,9 @@ function PlayerInner() {
     <div className="relative w-screen h-screen overflow-hidden flex flex-col nx-dot-grid" style={{ background: 'var(--nx-bg-deep)' }}>
       {/* ── Main area (grows to fill space above bottom bar) ── */}
       <div className="flex-1 relative min-h-0">
+
+        {/* ── Now Playing Stage (center fill) ── */}
+        <NowPlayingStage libOpen={showLib} queueOpen={queueOpen} />
 
         {/* ── Library panel
              Mobile: full-screen overlay over the visualizer
