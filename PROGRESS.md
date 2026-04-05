@@ -1,7 +1,7 @@
 # FineTune V1 — Build Progress
 
 > Spec source: `FineTune_V1_Spec-1.md`
-> Last updated: 2026-04-04 (session 5 — perf + build fixes)
+> Last updated: 2026-04-05 (session 6 — mobile responsiveness)
 
 ---
 
@@ -400,6 +400,23 @@ All shortcuts listed in spec — none implemented yet.
 - `PlayerShell.tsx`: `currentTrack` wrapped in `useMemo`; all inline arrow handlers replaced with `useCallback`
 - `vitest.config.ts`: Excluded `.worktrees/**` from test runs to fix phantom failures
 - `app/types/color-thief-browser.d.ts`: Added missing type declaration — fixes production build TS error
+
+---
+
+## Mobile Responsiveness (session 6)
+
+All UI components now work on screens < 640px with ≥ 44px touch targets.
+
+- `PlayerBar.tsx`: Two-row layout on mobile (transport row + secondary row); `overflow-x-auto` on secondary; all icon buttons 44×44px (`w-11 h-11`); `pb-safe` for iOS notch; progress bar thumb enlarged; context menu clamped to viewport
+- `PlayerShell.tsx`: Flex-column layout — EQ drawer stacks naturally above PlayerBar; Library panel is `w-full` on mobile (full-screen overlay); all inline handlers replaced with `useCallback`
+- `QueueSidebar.tsx`: `w-full sm:w-72`; remove button always visible on mobile (`opacity-100 sm:opacity-0 sm:group-hover:opacity-100`)
+- `NowPlayingPanel.tsx`: `w-full sm:w-80`; `rounded-none sm:rounded-2xl`; `border-0 sm:border`; `max-h-full overflow-y-auto`
+- `KeyboardShortcutsOverlay.tsx`: `w-full mx-4 sm:w-80`; `max-h-[80vh] overflow-y-auto`; added `E → Toggle EQ` entry
+- `EQPanel.tsx`: Preset chips `overflow-x-auto sm:flex-wrap`; buttons `py-1 shrink-0 touch-manipulation`
+- `TrackLibrary.tsx`: Long-press (500ms) opens context menu on mobile; menu position clamped to viewport; menu buttons `py-2.5 touch-manipulation` (44px)
+- `VisualizerContainer.tsx`: Mobile key picker toggle button; grid hidden on mobile until toggled; grid buttons `w-8 h-8` on mobile
+- `app/globals.css`: `.pb-safe` utility; `overscroll-behavior: none` on html/body
+- `app/layout.tsx`: `viewport` moved to separate `export const viewport: Viewport` (Next.js 16 API)
 
 ---
 

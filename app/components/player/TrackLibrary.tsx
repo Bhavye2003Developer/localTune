@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle, type PointerEvent } from 'react';
+import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Music, Play, Search, X } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
@@ -34,6 +34,22 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
   });
 
   const closeMenu = useCallback(() => setMenu(m => ({ ...m, visible: false })), []);
+
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openMenu = useCallback((x: number, y: number, trackId: string) => {
+    // Clamp to viewport so menu never goes off-screen (menu is ~160px wide, ~110px tall)
+    const clampedX = Math.min(x, window.innerWidth - 164);
+    const clampedY = Math.min(y, window.innerHeight - 120);
+    setMenu({ visible: true, x: clampedX, y: clampedY, trackId });
+  }, []);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!menu.visible) return;
@@ -94,9 +110,22 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   height: vItem.size,
                 }}
                 onClick={() => playNow(track.id)}
+                onPointerDown={(e) => {
+                  if (e.button !== 0) return; // only primary pointer
+                  const { clientX, clientY } = e;
+                  const tid = track.id;
+                  longPressTimer.current = setTimeout(() => {
+                    longPressTimer.current = null;
+                    openMenu(clientX, clientY, tid);
+                  }, 500);
+                }}
+                onPointerMove={cancelLongPress}
+                onPointerUp={cancelLongPress}
+                onPointerCancel={cancelLongPress}
                 onContextMenu={(e) => {
                   e.preventDefault();
-                  setMenu({ visible: true, x: e.clientX, y: e.clientY, trackId: track.id });
+                  cancelLongPress();
+                  openMenu(e.clientX, e.clientY, track.id);
                 }}
                 className={`flex items-center gap-2.5 px-3 cursor-pointer transition-colors group
                   ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
@@ -146,19 +175,19 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
           style={{ left: menu.x, top: menu.y }}
         >
           <button
-            className="block w-full px-4 py-1.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+            className="block w-full px-4 py-2.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap touch-manipulation"
             onPointerDown={e => { e.stopPropagation(); playNow(menu.trackId); closeMenu(); }}
           >
             Play Now
           </button>
           <button
-            className="block w-full px-4 py-1.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+            className="block w-full px-4 py-2.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap touch-manipulation"
             onPointerDown={e => { e.stopPropagation(); playNext(menu.trackId); closeMenu(); }}
           >
             Play Next
           </button>
           <button
-            className="block w-full px-4 py-1.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+            className="block w-full px-4 py-2.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap touch-manipulation"
             onPointerDown={e => { e.stopPropagation(); addToQueue(menu.trackId); closeMenu(); }}
           >
             Add to Queue
