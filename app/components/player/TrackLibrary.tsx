@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Music, Play, Search, X } from 'lucide-react';
+import { Play, X } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
 
 export interface TrackLibraryHandle {
@@ -38,7 +38,6 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openMenu = useCallback((x: number, y: number, trackId: string) => {
-    // Clamp to viewport so menu never goes off-screen (menu is ~160px wide, ~110px tall)
     const clampedX = Math.min(x, window.innerWidth - 164);
     const clampedY = Math.min(y, window.innerHeight - 120);
     setMenu({ visible: true, x: clampedX, y: clampedY, trackId });
@@ -69,36 +68,57 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      {/* Search bar */}
-      <div className="px-3 py-1.5 relative">
-        <Search size={11} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
-        <input
-          ref={searchRef}
-          type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Search…"
-          className="w-full bg-white/6 border border-white/10 rounded-md text-xs text-white/70 placeholder-white/25 pl-6 pr-6 py-1 focus:outline-none focus:border-white/25 focus:bg-white/8 transition-colors"
-        />
+
+      {/* ── Search ── */}
+      <div className="px-3 py-2 relative">
+        <div className="flex items-center border-b" style={{ borderColor: 'rgba(0,212,255,0.2)' }}>
+          <span className="font-mono text-[10px] shrink-0 pr-1.5" style={{ color: 'var(--nx-cyan-dim)' }}>
+            QUERY ›
+          </span>
+          <input
+            ref={searchRef}
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="search tracks..."
+            className="flex-1 bg-transparent text-[11px] py-1 focus:outline-none font-mono"
+            style={{
+              color: 'var(--nx-text)',
+              caretColor: 'var(--nx-cyan)',
+            }}
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="shrink-0 transition-colors"
+              style={{ color: 'var(--nx-text-dim)' }}
+            >
+              <X size={10} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Count line ── */}
+      <div className="px-3 pb-1 flex items-center justify-between">
+        <span className="font-mono uppercase tracking-widest text-[9px]" style={{ color: 'var(--nx-cyan-dim)' }}>
+          {query ? `${filtered.length} RESULTS` : `${tracks.length} FILES LOADED`}
+        </span>
         {query && (
-          <button
-            onClick={() => setQuery('')}
-            className="absolute right-5 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors"
-          >
-            <X size={11} />
-          </button>
+          <span className="font-mono text-[9px]" style={{ color: 'var(--nx-text-dim)' }}>
+            {filtered.length}/{tracks.length}
+          </span>
         )}
       </div>
 
-      <div className="px-3 py-1 text-white/30 text-[10px] tracking-widest uppercase">
-        {query ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : `Library — ${tracks.length} track${tracks.length !== 1 ? 's' : ''}`}
-      </div>
-
+      {/* ── Track list ── */}
       <div ref={parentRef} className="flex-1 overflow-y-auto">
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map(vItem => {
             const track = filtered[vItem.index];
             const isCurrent = track.id === currentId;
+            const idx = String(vItem.index + 1).padStart(3, '0');
+
             return (
               <div
                 key={track.id}
@@ -108,10 +128,14 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   transform: `translateY(${vItem.start}px)`,
                   width: '100%',
                   height: vItem.size,
+                  borderLeft: isCurrent
+                    ? '2px solid var(--nx-cyan)'
+                    : '2px solid transparent',
+                  background: isCurrent ? 'var(--nx-bg-raised)' : undefined,
                 }}
                 onClick={() => playNow(track.id)}
                 onPointerDown={(e) => {
-                  if (e.button !== 0) return; // only primary pointer
+                  if (e.button !== 0) return;
                   const { clientX, clientY } = e;
                   const tid = track.id;
                   longPressTimer.current = setTimeout(() => {
@@ -127,41 +151,80 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   cancelLongPress();
                   openMenu(e.clientX, e.clientY, track.id);
                 }}
-                className={`flex items-center gap-2.5 px-3 cursor-pointer transition-colors group
-                  ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                className="flex items-center gap-2 px-2 cursor-pointer transition-colors group"
+                onMouseEnter={e => {
+                  if (!isCurrent) {
+                    (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'var(--nx-red)';
+                    (e.currentTarget as HTMLDivElement).style.background = '#06101a';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isCurrent) {
+                    (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'transparent';
+                    (e.currentTarget as HTMLDivElement).style.background = '';
+                  }
+                }}
               >
-                <div className="w-7 h-7 rounded flex items-center justify-center shrink-0">
+                {/* Index */}
+                <span className="font-mono text-[9px] shrink-0 w-7 text-right" style={{ color: 'var(--nx-cyan-dim)' }}>
+                  T-{idx}
+                </span>
+
+                {/* Status dot */}
+                <span
+                  className={isCurrent && playing ? 'animate-nx-blink' : ''}
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: track.error ? 'var(--nx-red)' : isCurrent ? 'var(--nx-cyan)' : 'var(--nx-cyan-dim)',
+                    flexShrink: 0,
+                  }}
+                />
+
+                {/* Playing indicator */}
+                <div className="w-5 shrink-0 flex items-center justify-center">
                   {isCurrent && playing ? (
-                    <span className="flex gap-0.5 items-end h-4">
+                    <span className="flex gap-px items-end h-3.5">
                       {[1, 2, 3].map(i => (
                         <span
                           key={i}
-                          className="w-0.5 bg-cyan-400 rounded-full animate-bounce"
-                          style={{ height: `${50 + i * 15}%`, animationDelay: `${i * 100}ms` }}
+                          className="w-px rounded-full animate-bounce"
+                          style={{
+                            height: `${50 + i * 15}%`,
+                            animationDelay: `${i * 100}ms`,
+                            background: 'var(--nx-cyan)',
+                          }}
                         />
                       ))}
                     </span>
                   ) : isCurrent ? (
-                    <Play size={12} className="text-cyan-400 fill-cyan-400" />
-                  ) : (
-                    <Music size={12} className="text-white/25 group-hover:text-white/50" />
-                  )}
+                    <Play size={10} style={{ color: 'var(--nx-cyan)', fill: 'var(--nx-cyan)' }} />
+                  ) : null}
                 </div>
+
+                {/* Title + artist */}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm truncate leading-tight ${isCurrent ? 'text-cyan-300' : 'text-white/70'}`}>
+                  <p className="text-[12px] truncate leading-tight" style={{ color: isCurrent ? 'var(--nx-cyan)' : 'var(--nx-text)' }}>
                     {track.title}
                   </p>
-                  <p className="text-[10px] text-white/25 truncate">
+                  <p className="font-mono text-[9px] truncate" style={{ color: 'var(--nx-text-dim)' }}>
                     {track.artist || track.name}
                   </p>
                 </div>
+
+                {/* Duration */}
                 {track.duration > 0 && (
-                  <span className="text-[10px] text-white/25 shrink-0">
+                  <span className="font-mono text-[10px] shrink-0" style={{ color: 'var(--nx-cyan-dim)' }}>
                     {formatTime(track.duration)}
                   </span>
                 )}
+
+                {/* Error badge */}
                 {track.error && (
-                  <span className="text-[9px] text-red-400 bg-red-400/10 px-1 rounded ml-1 shrink-0">ERR</span>
+                  <span className="font-mono text-[9px] px-1 shrink-0" style={{ color: 'var(--nx-red)', border: '1px solid var(--nx-red)', opacity: 0.8 }}>
+                    ERR
+                  </span>
                 )}
               </div>
             );
@@ -169,29 +232,33 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
         </div>
       </div>
 
+      {/* ── Context menu ── */}
       {menu.visible && (
         <div
-          className="fixed z-50 bg-black/90 border border-white/15 rounded-lg py-1 shadow-xl"
-          style={{ left: menu.x, top: menu.y }}
+          className="fixed z-50 py-1 shadow-xl"
+          style={{
+            left: menu.x,
+            top: menu.y,
+            background: 'var(--nx-bg-panel)',
+            border: '1px solid var(--nx-border-active)',
+          }}
         >
-          <button
-            className="block w-full px-4 py-2.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap touch-manipulation"
-            onPointerDown={e => { e.stopPropagation(); playNow(menu.trackId); closeMenu(); }}
-          >
-            Play Now
-          </button>
-          <button
-            className="block w-full px-4 py-2.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap touch-manipulation"
-            onPointerDown={e => { e.stopPropagation(); playNext(menu.trackId); closeMenu(); }}
-          >
-            Play Next
-          </button>
-          <button
-            className="block w-full px-4 py-2.5 text-xs text-left text-white/70 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap touch-manipulation"
-            onPointerDown={e => { e.stopPropagation(); addToQueue(menu.trackId); closeMenu(); }}
-          >
-            Add to Queue
-          </button>
+          {[
+            { label: 'PLAY NOW',     action: () => { playNow(menu.trackId);    closeMenu(); } },
+            { label: 'PLAY NEXT',    action: () => { playNext(menu.trackId);   closeMenu(); } },
+            { label: 'ADD TO QUEUE', action: () => { addToQueue(menu.trackId); closeMenu(); } },
+          ].map(({ label, action }) => (
+            <button
+              key={label}
+              className="block w-full px-4 py-2.5 text-left font-mono text-[10px] uppercase tracking-widest transition-colors whitespace-nowrap touch-manipulation"
+              style={{ color: 'var(--nx-text-dim)' }}
+              onPointerDown={e => { e.stopPropagation(); action(); }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-cyan)'; (e.target as HTMLElement).style.background = 'var(--nx-bg-raised)'; }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; (e.target as HTMLElement).style.background = ''; }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       )}
     </div>
