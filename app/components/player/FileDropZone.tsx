@@ -1,10 +1,9 @@
 'use client';
 
 import { useRef, useState, useCallback, type DragEvent } from 'react';
-import { Upload, FolderOpen } from 'lucide-react';
 import { usePlayer } from '../../lib/playerContext';
+import { TacticalBrackets } from '../ui/TacticalBrackets';
 
-// Recursively extract files from a FileSystemEntry (handles folders)
 async function extractFiles(entry: FileSystemEntry): Promise<File[]> {
   if (entry.isFile) {
     return new Promise(resolve => (entry as FileSystemFileEntry).file(f => resolve([f])));
@@ -25,51 +24,42 @@ export function FileDropZone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
-  const handleFiles = useCallback(
-    (files: File[]) => loadFiles(files),
-    [loadFiles]
-  );
+  const handleFiles = useCallback((files: File[]) => loadFiles(files), [loadFiles]);
 
-  const onDragOver = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    setDragging(true);
-  }, []);
-
+  const onDragOver  = useCallback((e: DragEvent) => { e.preventDefault(); setDragging(true); }, []);
   const onDragLeave = useCallback(() => setDragging(false), []);
 
   const onDrop = useCallback(async (e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const items = Array.from(e.dataTransfer.items);
-    const entries = items
-      .map(i => i.webkitGetAsEntry())
-      .filter((en): en is FileSystemEntry => en !== null);
+    const entries = items.map(i => i.webkitGetAsEntry()).filter((en): en is FileSystemEntry => en !== null);
     const nested = await Promise.all(entries.map(extractFiles));
-    const all = nested.flat().filter(
-      f => f.type.startsWith('audio/') || f.type.startsWith('video/')
-    );
+    const all = nested.flat().filter(f => f.type.startsWith('audio/') || f.type.startsWith('video/'));
     if (all.length > 0) handleFiles(all);
   }, [handleFiles]);
 
-  const onInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files) handleFiles(Array.from(e.target.files));
-    },
-    [handleFiles]
-  );
+  const onInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) handleFiles(Array.from(e.target.files));
+  }, [handleFiles]);
 
   return (
     <div
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className={`mx-3 my-3 rounded-xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center gap-2 py-6 px-4
-        ${dragging
-          ? 'border-cyan-400/70 bg-cyan-400/8'
-          : 'border-white/15 hover:border-white/30 hover:bg-white/4'
-        }`}
       onClick={() => inputRef.current?.click()}
+      className="relative mx-3 my-2 cursor-pointer flex flex-col items-center justify-center gap-1.5 py-5 px-4 transition-all"
+      style={{
+        boxShadow: dragging ? '0 0 16px rgba(255,0,60,0.15)' : undefined,
+      }}
     >
+      <TacticalBrackets
+        color={dragging ? 'rgba(255,0,60,0.7)' : 'rgba(0,212,255,0.35)'}
+        size={12}
+        thickness={1.5}
+      />
+
       <input
         ref={inputRef}
         type="file"
@@ -78,14 +68,13 @@ export function FileDropZone() {
         className="hidden"
         onChange={onInputChange}
       />
-      {dragging ? (
-        <FolderOpen size={22} className="text-cyan-400" />
-      ) : (
-        <Upload size={22} className="text-white/40" />
-      )}
-      <p className="text-white/50 text-xs text-center leading-relaxed">
-        {dragging ? 'Drop to load' : 'Click or drag files / folders'}
-      </p>
+
+      <span className="font-mono uppercase tracking-widest text-[9px]" style={{ color: dragging ? 'var(--nx-red)' : 'var(--nx-cyan-dim)' }}>
+        {dragging ? 'RECEIVING PAYLOAD' : 'DROP AUDIO FILES'}
+      </span>
+      <span className="font-mono text-[9px]" style={{ color: 'var(--nx-text-dim)' }}>
+        {dragging ? '—' : 'OR CLICK TO SELECT'}
+      </span>
     </div>
   );
 }
