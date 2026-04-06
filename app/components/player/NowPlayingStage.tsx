@@ -134,12 +134,12 @@ export function NowPlayingStage({ libOpen, queueOpen }: Props) {
       <div className="hidden sm:flex h-full">
 
         {/* Left column: art + track info */}
-        <div className="flex flex-col justify-center gap-5 px-8 py-8 w-72 shrink-0 select-none">
+        <div className="flex flex-col justify-center gap-4 px-8 py-8 w-72 shrink-0 select-none overflow-hidden">
           {track ? (
             <>
               <ArtBox coverUrl={track.coverUrl} playing={playing} />
 
-              <div className="min-w-0 w-full">
+              <div className="min-w-0 w-full overflow-hidden">
                 <div
                   className="font-mono uppercase tracking-widest text-[8px] mb-2"
                   style={{ color: 'var(--nx-cyan-dim)' }}
@@ -147,18 +147,18 @@ export function NowPlayingStage({ libOpen, queueOpen }: Props) {
                   {playing ? '▶ BROADCASTING' : '‖ STANDBY'}
                 </div>
                 <p
-                  className="text-2xl font-bold leading-snug"
-                  style={{ color: 'var(--nx-text)', wordBreak: 'break-word' }}
+                  className="text-lg font-semibold line-clamp-2 leading-snug"
+                  style={{ color: 'var(--nx-text)' }}
                 >
                   {track.title}
                 </p>
                 {track.artist && (
-                  <p className="font-mono text-[12px] mt-2" style={{ color: 'var(--nx-cyan-dim)' }}>
+                  <p className="font-mono text-[11px] mt-1.5 truncate" style={{ color: 'var(--nx-cyan-dim)' }}>
                     {track.artist}
                   </p>
                 )}
                 {track.album && (
-                  <p className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--nx-text-dim)' }}>
+                  <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: 'var(--nx-text-dim)' }}>
                     {track.album}
                   </p>
                 )}
@@ -206,29 +206,30 @@ export function NowPlayingStage({ libOpen, queueOpen }: Props) {
         </div>
       </div>
 
-      {/* ── Mobile: centered art + info (EQ lives in bottom drawer) ── */}
+      {/* ── Mobile: full-height layout with art + info filling available space ── */}
       <div
-        className="sm:hidden h-full flex items-center justify-center"
+        className="sm:hidden h-full flex flex-col"
         style={{ pointerEvents: 'none' }}
       >
         {track ? (
           <div
-            className="flex flex-col items-center gap-5 px-6 max-w-sm w-full select-none"
+            className="flex flex-col items-center justify-center gap-5 px-6 py-8 h-full select-none"
             style={{ pointerEvents: 'auto' }}
           >
+            {/* Bigger art on mobile — fills more space */}
             <ArtBox coverUrl={track.coverUrl} playing={playing} />
-            <div className="text-center w-full min-w-0">
+            <div className="text-center w-full min-w-0 max-w-xs">
               <div
-                className="font-mono uppercase tracking-widest text-[8px] mb-1"
+                className="font-mono uppercase tracking-widest text-[8px] mb-1.5"
                 style={{ color: 'var(--nx-cyan-dim)' }}
               >
                 {playing ? '▶ BROADCASTING' : '‖ STANDBY'}
               </div>
-              <p className="text-xl font-semibold leading-tight truncate" style={{ color: 'var(--nx-text)' }}>
+              <p className="text-xl font-semibold line-clamp-2 leading-snug" style={{ color: 'var(--nx-text)' }}>
                 {track.title}
               </p>
               {track.artist && (
-                <p className="font-mono text-[11px] mt-1 truncate" style={{ color: 'var(--nx-cyan-dim)' }}>
+                <p className="font-mono text-[11px] mt-1.5 truncate" style={{ color: 'var(--nx-cyan-dim)' }}>
                   {track.artist}
                 </p>
               )}

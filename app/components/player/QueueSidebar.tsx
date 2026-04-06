@@ -142,7 +142,7 @@ export function QueueSidebar({ onClose }: QueueSidebarProps) {
   return (
     <div
       className="absolute right-0 top-0 bottom-0 z-25 flex flex-col select-none nx-scanline-overlay w-full sm:w-72 border-l"
-      style={{ background: 'var(--nx-bg-panel)', borderColor: 'var(--nx-border)' }}
+      style={{ background: 'var(--nx-bg-panel)', borderColor: 'rgba(0,212,255,0.25)' }}
     >
       {/* Header */}
       <div className="px-3 pt-3 pb-2 shrink-0 flex items-center justify-between" style={{ borderBottom: '1px solid var(--nx-border)' }}>
