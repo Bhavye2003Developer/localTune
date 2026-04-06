@@ -88,11 +88,12 @@ function PlayerInner() {
         )}
       </div>
 
-      {/* ── Bottom stack: EQ drawer + PlayerBar ────────────────────────────── */}
+      {/* ── Bottom stack: EQ drawer (mobile only) + PlayerBar ──────────────── */}
       <div className="shrink-0 flex flex-col">
-        {/* EQ drawer — slides open above PlayerBar with CSS transition */}
+        {/* EQ drawer — mobile only; desktop EQ lives permanently in NowPlayingStage */}
         <div
           className={`
+            sm:hidden
             bg-black/85 backdrop-blur-xl border-t border-white/8
             overflow-hidden transition-all duration-200 ease-in-out
             ${eqOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}

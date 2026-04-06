@@ -11,6 +11,7 @@ interface Props {
   onClose: () => void;
   setEQBandGain: (index: number, gainDb: number) => void;
   setEQBypass: (on: boolean) => void;
+  embedded?: boolean;
 }
 
 interface CustomPreset {
@@ -19,7 +20,7 @@ interface CustomPreset {
   bands: { freq: number; gain: number; q: number }[];
 }
 
-export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, setEQBypass }: Props) {
+export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, setEQBypass, embedded }: Props) {
   const [state, dispatch] = useReducer(eqReducer, INITIAL_EQ_STATE);
   const [customPresets, setCustomPresets] = useState<CustomPreset[]>([]);
   const [saving, setSaving] = useState(false);
@@ -173,17 +174,19 @@ export const EQPanel = memo(function EQPanel({ open, onClose, setEQBandGain, set
           </button>
         )}
 
-        {/* Close */}
-        <button
-          aria-label="Close EQ panel"
-          onClick={onClose}
-          className="font-mono text-[10px] px-1.5 py-0.5 transition-colors touch-manipulation"
-          style={{ color: 'var(--nx-text-dim)' }}
-          onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-red)'; }}
-          onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
-        >
-          ✕
-        </button>
+        {/* Close — hidden when embedded in stage */}
+        {!embedded && (
+          <button
+            aria-label="Close EQ panel"
+            onClick={onClose}
+            className="font-mono text-[10px] px-1.5 py-0.5 transition-colors touch-manipulation"
+            style={{ color: 'var(--nx-text-dim)' }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-red)'; }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Curve */}
