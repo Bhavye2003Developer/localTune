@@ -88,6 +88,11 @@ html, body {
   100% { transform: scaleY(1); }
 }
 
+@keyframes nx-idle-pulse {
+  0%, 100% { opacity: 0.12; }
+  50%       { opacity: 0.3; }
+}
+
 /* ── Animation utilities ────────────────────────────────────────────────────── */
 @utility animate-nx-blink {
   animation: nx-blink 1.2s step-end infinite;
@@ -99,6 +104,10 @@ html, body {
 
 @utility animate-nx-flicker {
   animation: nx-flicker 120ms ease-out forwards;
+}
+
+@utility animate-nx-idle-pulse {
+  animation: nx-idle-pulse 3s ease-in-out infinite;
 }
 
 /* ── Scanline overlay ───────────────────────────────────────────────────────── */

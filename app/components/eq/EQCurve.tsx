@@ -1,33 +1,40 @@
 'use client';
 
-import React, { useRef, useState, useCallback, useMemo, memo } from 'react';
+import React, {
+  useRef, useState, useLayoutEffect, useCallback, useMemo, memo,
+} from 'react';
 import type { EQState, EQAction, Band } from '../../lib/eqPresets';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Coordinate constants (in SVG pixel space) ────────────────────────────────
 
-const W = 600;
-const H = 160;
-const PAD_L = 28;
-const PAD_R = 8;
-const PAD_T = 8;
-const PAD_B = 20;
-const PLOT_W = W - PAD_L - PAD_R;
-const PLOT_H = H - PAD_T - PAD_B;
-const DB_RANGE = 15; // ±15 dB
+const PAD_L = 36; // room for dB labels
+const PAD_R = 12;
+const PAD_T = 12;
+const PAD_B = 26; // room for freq labels
+const DB_RANGE = 15;
 
-// ─── Frequency array: 512 log-spaced points from 20 Hz to 20 kHz ─────────────
+// ─── Frequency sample array ───────────────────────────────────────────────────
 
 export const logFreqs: number[] = Array.from({ length: 512 }, (_, i) =>
   20 * Math.pow(1000, i / 511)
 );
 
-// ─── Mathematical biquad transfer function ───────────────────────────────────
-// Computes gain (dB) at frequency f for a single band.
+// ─── Coordinate helpers ───────────────────────────────────────────────────────
+
+function freqToX(f: number, w: number): number {
+  return PAD_L + (Math.log10(f / 20) / Math.log10(1000)) * (w - PAD_L - PAD_R);
+}
+
+function dbToY(db: number, h: number): number {
+  return PAD_T + ((DB_RANGE - db) / (2 * DB_RANGE)) * (h - PAD_T - PAD_B);
+}
+
+// ─── Biquad transfer function ─────────────────────────────────────────────────
 
 export function biquadResponse(band: Band, f: number): number {
   if (band.gain === 0) return 0;
 
-  const fs = 96000; // sample rate for transfer function evaluation
+  const fs = 96000;
   const w0 = (2 * Math.PI * band.freq) / fs;
   const cosW0 = Math.cos(w0);
   const sinW0 = Math.sin(w0);
@@ -37,12 +44,8 @@ export function biquadResponse(band: Band, f: number): number {
   let b0: number, b1: number, b2: number, a0: number, a1: number, a2: number;
 
   if (band.type === 'peaking') {
-    b0 = 1 + alpha * A;
-    b1 = -2 * cosW0;
-    b2 = 1 - alpha * A;
-    a0 = 1 + alpha / A;
-    a1 = -2 * cosW0;
-    a2 = 1 - alpha / A;
+    b0 = 1 + alpha * A;   b1 = -2 * cosW0; b2 = 1 - alpha * A;
+    a0 = 1 + alpha / A;   a1 = -2 * cosW0; a2 = 1 - alpha / A;
   } else if (band.type === 'lowshelf') {
     b0 = A * ((A + 1) - (A - 1) * cosW0 + 2 * Math.sqrt(A) * alpha);
     b1 = 2 * A * ((A - 1) - (A + 1) * cosW0);
@@ -51,7 +54,6 @@ export function biquadResponse(band: Band, f: number): number {
     a1 = -2 * ((A - 1) + (A + 1) * cosW0);
     a2 = (A + 1) + (A - 1) * cosW0 - 2 * Math.sqrt(A) * alpha;
   } else {
-    // highshelf
     b0 = A * ((A + 1) + (A - 1) * cosW0 + 2 * Math.sqrt(A) * alpha);
     b1 = -2 * A * ((A - 1) + (A + 1) * cosW0);
     b2 = A * ((A + 1) + (A - 1) * cosW0 - 2 * Math.sqrt(A) * alpha);
@@ -63,65 +65,36 @@ export function biquadResponse(band: Band, f: number): number {
   const w = (2 * Math.PI * f) / fs;
   const cosW = Math.cos(w);
   const sinW = Math.sin(w);
-
   const numRe = b0 + b1 * cosW + b2 * Math.cos(2 * w);
   const numIm = -(b1 * sinW + b2 * Math.sin(2 * w));
   const denRe = a0 + a1 * cosW + a2 * Math.cos(2 * w);
   const denIm = -(a1 * sinW + a2 * Math.sin(2 * w));
-
   const numMag2 = numRe * numRe + numIm * numIm;
   const denMag2 = denRe * denRe + denIm * denIm;
-
   if (denMag2 === 0) return 0;
   return 10 * Math.log10(numMag2 / denMag2);
 }
 
-// ─── Coordinate helpers ───────────────────────────────────────────────────────
+// ─── Curve path builder ───────────────────────────────────────────────────────
 
-function freqToX(f: number): number {
-  return PAD_L + (Math.log10(f / 20) / Math.log10(1000)) * PLOT_W;
-}
-
-function dbToY(db: number): number {
-  return PAD_T + ((DB_RANGE - db) / (2 * DB_RANGE)) * PLOT_H;
-}
-
-// ─── Build SVG path from dB curve — expensive, must be memoized ──────────────
-
-function buildCurvePaths(bands: Band[]): { linePath: string; areaPath: string } {
+function buildCurvePaths(bands: Band[], w: number, h: number) {
   const points = logFreqs.map(f => {
     const db = bands.reduce((sum, band) => sum + biquadResponse(band, f), 0);
-    return `${freqToX(f).toFixed(2)},${dbToY(db).toFixed(2)}`;
+    return `${freqToX(f, w).toFixed(2)},${dbToY(db, h).toFixed(2)}`;
   });
-
   const linePath = `M ${points.join(' L ')}`;
-  const bottomY = dbToY(-DB_RANGE - 1).toFixed(2);
-  const startX = freqToX(logFreqs[0]).toFixed(2);
-  const endX = freqToX(logFreqs[logFreqs.length - 1]).toFixed(2);
+  const bottomY = dbToY(-DB_RANGE - 1, h).toFixed(2);
+  const startX  = freqToX(logFreqs[0], w).toFixed(2);
+  const endX    = freqToX(logFreqs[511], w).toFixed(2);
   const areaPath = `M ${startX},${bottomY} L ${points.join(' L ')} L ${endX},${bottomY} Z`;
-
   return { linePath, areaPath };
 }
 
-// ─── Grid labels ──────────────────────────────────────────────────────────────
+// ─── Grid config ──────────────────────────────────────────────────────────────
 
 const H_GRID_DB = [15, 6, 0, -6, -15];
 const V_GRID_HZ = [20, 200, 2000, 20000];
 const V_GRID_LABELS: Record<number, string> = { 20: '20', 200: '200', 2000: '2k', 20000: '20k' };
-
-// Pre-compute static grid elements (never change)
-const GRID_LINES_H = H_GRID_DB.map(db => (
-  <line key={db} x1={PAD_L} x2={W - PAD_R} y1={dbToY(db)} y2={dbToY(db)} />
-));
-const GRID_LINES_V = V_GRID_HZ.map(hz => (
-  <line key={hz} x1={freqToX(hz)} x2={freqToX(hz)} y1={PAD_T} y2={H - PAD_B} />
-));
-const GRID_LABELS_H = H_GRID_DB.map(db => (
-  <text key={db} x={PAD_L - 3} y={dbToY(db) + 3} textAnchor="end">{db > 0 ? `+${db}` : db}</text>
-));
-const GRID_LABELS_V = V_GRID_HZ.map(hz => (
-  <text key={hz} x={freqToX(hz)} y={H - 3} textAnchor="middle">{V_GRID_LABELS[hz]}</text>
-));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -134,19 +107,60 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
   const { bands, bypass } = state;
   const [activeDot, setActiveDot] = useState<number | null>(null);
 
-  // Keep bands in a ref so pointer-event callbacks never go stale and don't need recreation
-  const bandsRef = useRef(bands);
-  bandsRef.current = bands;
+  // Observed container dimensions — SVG viewBox matches exactly, so 1 unit = 1 px
+  const [dims, setDims] = useState({ w: 800, h: 300 });
+  const dimsRef = useRef(dims);
+  dimsRef.current = dims;
 
-  const dragRef = useRef<{ bandIndex: number; startY: number; startGain: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const bandsRef     = useRef(bands);
+  bandsRef.current   = bands;
+  const dragRef      = useRef<{ bandIndex: number; startY: number; startGain: number } | null>(null);
 
-  // Expensive path computation — only recompute when band gains actually change
-  const { linePath, areaPath } = useMemo(() => buildCurvePaths(bands), [bands]);
+  // Observe container size — skipped in jsdom (no ResizeObserver)
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) setDims({ w: width, h: height });
+    });
+    ro.observe(el);
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) setDims({ w: rect.width, h: rect.height });
+    return () => ro.disconnect();
+  }, []);
 
-  // Dot positions — memoized separately so we don't redo path math on activeDot change
+  // Grid lines + labels — recalculate only when dims change
+  const grid = useMemo(() => {
+    const { w, h } = dims;
+    return {
+      linesH:  H_GRID_DB.map(db => <line key={db} x1={PAD_L} x2={w - PAD_R} y1={dbToY(db, h)} y2={dbToY(db, h)} />),
+      linesV:  V_GRID_HZ.map(hz => <line key={hz} x1={freqToX(hz, w)} x2={freqToX(hz, w)} y1={PAD_T} y2={h - PAD_B} />),
+      labelsH: H_GRID_DB.map(db => (
+        <text key={db} x={PAD_L - 5} y={dbToY(db, h) + 4} textAnchor="end">
+          {db > 0 ? `+${db}` : db}
+        </text>
+      )),
+      labelsV: V_GRID_HZ.map(hz => (
+        <text key={hz} x={freqToX(hz, w)} y={h - 7} textAnchor="middle">
+          {V_GRID_LABELS[hz]}
+        </text>
+      )),
+      zeroY: dbToY(0, h),
+    };
+  }, [dims]);
+
+  // Curve paths — recalculate on band change or resize
+  const { linePath, areaPath } = useMemo(
+    () => buildCurvePaths(bands, dims.w, dims.h),
+    [bands, dims]
+  );
+
+  // Dot positions — separate memo so path doesn't recompute on activeDot change
   const dotPositions = useMemo(
-    () => bands.map(b => ({ x: freqToX(b.freq), y: dbToY(b.gain), gain: b.gain })),
-    [bands]
+    () => bands.map(b => ({ x: freqToX(b.freq, dims.w), y: dbToY(b.gain, dims.h), gain: b.gain })),
+    [bands, dims]
   );
 
   const onPointerDown = useCallback((e: React.PointerEvent<SVGCircleElement>, bandIndex: number) => {
@@ -159,9 +173,11 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
   const onPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (!dragRef.current) return;
     const { bandIndex, startY, startGain } = dragRef.current;
-    const dbPerPixel = (2 * DB_RANGE) / PLOT_H;
-    const deltaDb = -(e.clientY - startY) * dbPerPixel;
-    const newGain = Math.max(-DB_RANGE, Math.min(DB_RANGE, startGain + deltaDb));
+    const plotH = dimsRef.current.h - PAD_T - PAD_B;
+    const dbPerPixel = (2 * DB_RANGE) / plotH;
+    const newGain = Math.max(-DB_RANGE, Math.min(DB_RANGE,
+      startGain - (e.clientY - startY) * dbPerPixel
+    ));
     dispatch({ type: 'SET_BAND_GAIN', index: bandIndex, gain: parseFloat(newGain.toFixed(1)) });
   }, [dispatch]);
 
@@ -176,87 +192,99 @@ export const EQCurve = memo(function EQCurve({ state, dispatch }: Props) {
   }, [bypass, dispatch]);
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      width="100%"
-      height="100%"
-      style={{ display: 'block' }}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerUp}
-    >
-      {/* Static grid — never re-renders */}
-      <g stroke="rgba(0,212,255,0.12)" strokeWidth="0.5">
-        {GRID_LINES_H}
-        {GRID_LINES_V}
-      </g>
-      <g fill="rgba(0,212,255,0.45)" fontSize="9" fontFamily="monospace">
-        {GRID_LABELS_H}
-        {GRID_LABELS_V}
-      </g>
-
-      {/* Curve group — dims and locks when bypassed */}
-      <g
-        data-testid="eq-curve-group"
-        opacity={bypass ? '0.2' : '1'}
-        pointerEvents={bypass ? 'none' : undefined}
+    <div ref={containerRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+      <svg
+        viewBox={`0 0 ${dims.w} ${dims.h}`}
+        width="100%"
+        height="100%"
+        style={{ display: 'block' }}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
       >
-        {/* Filled area */}
-        <path
-          data-testid="eq-area"
-          d={areaPath}
-          fill="rgba(0,212,255,0.08)"
-          stroke="none"
-        />
-        {/* Curve line */}
-        <path
-          data-testid="eq-curve"
-          d={linePath}
-          fill="none"
-          stroke="#00d4ff"
-          strokeWidth="1.5"
+        {/* 0 dB reference line — slightly brighter than grid */}
+        <line
+          x1={PAD_L} x2={dims.w - PAD_R}
+          y1={grid.zeroY} y2={grid.zeroY}
+          stroke="rgba(0,212,255,0.22)" strokeWidth="1"
         />
 
-        {/* Band dots */}
-        {dotPositions.map(({ x, y, gain }, i) => {
-          const isActive = activeDot === i;
-          return (
-            <g key={i}>
-              {/* Crosshair lines on active dot */}
-              {isActive && (
-                <>
-                  <line x1={PAD_L} x2={W - PAD_R} y1={y} y2={y} stroke="rgba(255,0,60,0.3)" strokeWidth="0.5" strokeDasharray="3 3" />
-                  <line x1={x} x2={x} y1={PAD_T} y2={H - PAD_B} stroke="rgba(255,0,60,0.3)" strokeWidth="0.5" strokeDasharray="3 3" />
-                </>
-              )}
-              <circle
-                data-band={i}
-                cx={x}
-                cy={y}
-                r={isActive ? 7 : 5}
-                fill={isActive ? '#ff003c' : 'rgba(0,212,255,0.25)'}
-                stroke={isActive ? '#ff003c' : '#00d4ff'}
-                strokeWidth="1.5"
-                style={{ cursor: bypass ? 'default' : 'ns-resize', touchAction: 'none' }}
-                onPointerDown={e => onPointerDown(e, i)}
-                onDoubleClick={() => onDblClick(i)}
-              />
-              {isActive && (
-                <text
-                  x={x}
-                  y={y - 11}
-                  textAnchor="middle"
-                  fill="#00d4ff"
-                  fontSize="9"
-                  fontFamily="monospace"
-                >
-                  {gain >= 0 ? `+${gain.toFixed(1)}` : gain.toFixed(1)}
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </g>
-    </svg>
+        {/* Grid lines */}
+        <g stroke="rgba(0,212,255,0.08)" strokeWidth="0.5">
+          {grid.linesH}
+          {grid.linesV}
+        </g>
+
+        {/* Grid labels */}
+        <g fill="rgba(0,212,255,0.4)" fontSize="10" fontFamily="monospace">
+          {grid.labelsH}
+          {grid.labelsV}
+        </g>
+
+        {/* Curve group — dims + locks on bypass */}
+        <g
+          data-testid="eq-curve-group"
+          opacity={bypass ? '0.2' : '1'}
+          pointerEvents={bypass ? 'none' : undefined}
+        >
+          <path
+            data-testid="eq-area"
+            d={areaPath}
+            fill="rgba(0,212,255,0.08)"
+            stroke="none"
+          />
+          <path
+            data-testid="eq-curve"
+            d={linePath}
+            fill="none"
+            stroke="#00d4ff"
+            strokeWidth="1.5"
+          />
+
+          {/* Band dots */}
+          {dotPositions.map(({ x, y, gain }, i) => {
+            const isActive = activeDot === i;
+            return (
+              <g key={i}>
+                {isActive && (
+                  <>
+                    <line
+                      x1={PAD_L} x2={dims.w - PAD_R} y1={y} y2={y}
+                      stroke="rgba(255,0,60,0.3)" strokeWidth="0.5" strokeDasharray="4 4"
+                    />
+                    <line
+                      x1={x} x2={x} y1={PAD_T} y2={dims.h - PAD_B}
+                      stroke="rgba(255,0,60,0.3)" strokeWidth="0.5" strokeDasharray="4 4"
+                    />
+                  </>
+                )}
+                <circle
+                  data-band={i}
+                  cx={x} cy={y}
+                  r={isActive ? 7 : 5}
+                  fill={isActive ? '#ff003c' : 'rgba(0,212,255,0.2)'}
+                  stroke={isActive ? '#ff003c' : '#00d4ff'}
+                  strokeWidth="1.5"
+                  style={{ cursor: bypass ? 'default' : 'ns-resize', touchAction: 'none' }}
+                  onPointerDown={e => onPointerDown(e, i)}
+                  onDoubleClick={() => onDblClick(i)}
+                />
+                {isActive && (
+                  <text
+                    x={x} y={y - 12}
+                    textAnchor="middle"
+                    fill="#00d4ff"
+                    fontSize="10"
+                    fontFamily="monospace"
+                  >
+                    {gain >= 0 ? `+${gain.toFixed(1)}` : gain.toFixed(1)}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+    </div>
   );
 });

@@ -69,17 +69,45 @@ function ArtBox({ coverUrl, playing }: { coverUrl?: string; playing: boolean }) 
 
 function StandbyBlock({ centered }: { centered?: boolean }) {
   return (
-    <div className={`relative flex flex-col gap-4 py-10 px-10 select-none ${centered ? 'items-center text-center' : ''}`}>
-      <TacticalBrackets color="rgba(0,212,255,0.15)" size={20} thickness={1} />
-      <div className="font-mono text-[40px] leading-none" style={{ color: 'rgba(0,212,255,0.12)' }}>◈</div>
+    <div
+      className={`relative flex flex-col select-none ${centered ? 'items-center text-center gap-5 py-10 px-10' : 'gap-6 py-10 px-8'}`}
+    >
+      {!centered && <TacticalBrackets color="rgba(0,212,255,0.12)" size={20} thickness={1} />}
+
+      {/* System info lines */}
+      <div className="font-mono text-[8px] leading-relaxed" style={{ color: 'rgba(0,212,255,0.18)' }}>
+        <p>SYS-ID: NX7-FINETUNE</p>
+        <p>STATUS: IDLE · READY</p>
+      </div>
+
+      {/* Large icon */}
+      <div
+        className="font-mono leading-none animate-nx-idle-pulse"
+        style={{ fontSize: centered ? 56 : 80, color: 'rgba(0,212,255,1)' }}
+      >
+        ◈
+      </div>
+
+      {/* Message */}
       <div>
-        <p className="font-mono uppercase tracking-widest text-[10px]" style={{ color: 'rgba(0,212,255,0.3)' }}>
+        <p
+          className="font-mono uppercase tracking-widest text-[11px] font-medium"
+          style={{ color: 'rgba(0,212,255,0.35)' }}
+        >
           AWAITING TRANSMISSION
         </p>
-        <p className="font-mono text-[9px] mt-1.5" style={{ color: 'rgba(0,212,255,0.15)' }}>
-          DROP AUDIO FILES OR CLICK INTEL DATABASE
+        <p className="font-mono text-[9px] mt-2 leading-relaxed" style={{ color: 'rgba(0,212,255,0.15)' }}>
+          {centered ? 'DROP AUDIO FILES OR CLICK INTEL DATABASE' : 'DROP AUDIO FILES OR\nCLICK INTEL DATABASE'}
         </p>
       </div>
+
+      {/* Blinking cursor */}
+      <span
+        className="font-mono text-[13px] animate-nx-blink"
+        style={{ color: 'rgba(0,212,255,0.3)' }}
+      >
+        ▮
+      </span>
     </div>
   );
 }
