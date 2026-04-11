@@ -113,5 +113,12 @@ const stageDry: Partial<Record<StageId, GainNode>> = {};
 
 let _stageOrder: StageId[] = [...DSP_DEFAULTS.stageOrder];
 let _ctx: AudioContext | null = null;
-let _settings: DSPSettings = { ...DSP_DEFAULTS, stageOrder: [...DSP_DEFAULTS.stageOrder] };
+let _settings: DSPSettings = {
+  stageOrder: [...DSP_DEFAULTS.stageOrder],
+  replayGain: { ...DSP_DEFAULTS.replayGain },
+  bassEngine: { ...DSP_DEFAULTS.bassEngine },
+  compressor: { ...DSP_DEFAULTS.compressor },
+  stereoWidener: { ...DSP_DEFAULTS.stereoWidener },
+  reverb: { ...DSP_DEFAULTS.reverb },
+};
 let _saveTimer: ReturnType<typeof setTimeout> | null = null;
