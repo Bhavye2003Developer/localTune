@@ -302,12 +302,12 @@
 
 ---
 
-### Feature 10 — Media Session API ❌
+### Feature 10 — Media Session API ✅
 
-- [ ] `navigator.mediaSession` metadata (title, artist, album, artwork)
-- [ ] Handlers: play, pause, previoustrack, nexttrack, seekto
-- [ ] Updates on every track change
-- [ ] Cover art passed as MediaSession artwork
+- [x] `navigator.mediaSession` metadata (title, artist, album, artwork)
+- [x] Handlers: play, pause, previoustrack, nexttrack, seekto
+- [x] Updates on every track change
+- [x] Cover art passed as MediaSession artwork
 
 ---
 
