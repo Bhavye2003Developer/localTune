@@ -10,6 +10,7 @@ import { QueueSidebar } from './QueueSidebar';
 import { NowPlayingPanel } from './NowPlayingPanel';
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay';
 import { EQPanel } from '../eq/EQPanel';
+import { DSPPanel } from '../dsp/DSPPanel';
 import { NowPlayingStage } from './NowPlayingStage';
 
 function PlayerInner() {
@@ -19,6 +20,8 @@ function PlayerInner() {
   const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [eqOpen, setEqOpen] = useState(false);
+  const [dspOpen, setDspOpen] = useState(false);
+  const [detectedReplayGain, setDetectedReplayGain] = useState<string | null>(null);
   const searchRef = useRef<TrackLibraryHandle>(null);
 
   const handleToggleLib       = useCallback(() => setLibOpen(o => !o), []);
@@ -29,6 +32,8 @@ function PlayerInner() {
   const handleCloseShortcuts  = useCallback(() => setShortcutsOpen(false), []);
   const handleToggleEQ        = useCallback(() => setEqOpen(o => !o), []);
   const handleCloseEQ         = useCallback(() => setEqOpen(false), []);
+  const handleToggleDSP       = useCallback(() => setDspOpen(o => !o), []);
+  const handleCloseDSP        = useCallback(() => setDspOpen(false), []);
   const handleCloseQueue      = useCallback(() => setQueueOpen(false), []);
   const handleFocusSearch     = useCallback(() => searchRef.current?.focusSearch(), []);
 
@@ -36,6 +41,7 @@ function PlayerInner() {
     onOpenShortcuts: handleOpenShortcuts,
     focusSearch: handleFocusSearch,
     onToggleEQ: handleToggleEQ,
+    onToggleDSP: handleToggleDSP,
   });
 
   const showLib = libOpen || state.tracks.length === 0;
@@ -110,6 +116,19 @@ function PlayerInner() {
           </div>
         </div>
 
+        {/* DSP drawer */}
+        <div
+          className="bg-black/85 backdrop-blur-xl border-t border-white/8 overflow-hidden transition-all duration-200 ease-in-out"
+          style={{ height: dspOpen ? 280 : 0, maxHeight: dspOpen ? 280 : 0 }}
+        >
+          <DSPPanel
+            open={dspOpen}
+            onClose={handleCloseDSP}
+            onOpenEQ={handleToggleEQ}
+            detectedReplayGain={detectedReplayGain}
+          />
+        </div>
+
         {/* PlayerBar */}
         <PlayerBar
           libOpen={showLib}
@@ -120,6 +139,8 @@ function PlayerInner() {
           onOpenShortcuts={handleOpenShortcuts}
           eqOpen={eqOpen}
           onToggleEQ={handleToggleEQ}
+          dspOpen={dspOpen}
+          onToggleDSP={handleToggleDSP}
         />
       </div>
     </div>
