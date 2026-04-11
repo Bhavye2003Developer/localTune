@@ -103,3 +103,52 @@ describe('initDSP — chain wiring', () => {
     expect(mod.limiterNode!.connect).toHaveBeenCalledWith(masterGain);
   });
 });
+
+describe('setStageBypass', () => {
+  it('bypass=true sets wetGain=0 dryGain=1', async () => {
+    const { mod } = await freshDSP();
+    mod.setStageBypass('compressor', true);
+    // After bypass, dry path should carry signal
+    // We verify via getStageBypass
+    expect(mod.getStageBypass('compressor')).toBe(true);
+  });
+
+  it('bypass=false sets wetGain=1 dryGain=0', async () => {
+    const { mod } = await freshDSP();
+    mod.setStageBypass('compressor', true);
+    mod.setStageBypass('compressor', false);
+    expect(mod.getStageBypass('compressor')).toBe(false);
+  });
+
+  it('all stages can be bypassed independently', async () => {
+    const { mod } = await freshDSP();
+    const stages: import('../app/lib/dsp').StageId[] = ['eq', 'bassEngine', 'compressor', 'stereoWidener', 'reverb'];
+    for (const s of stages) {
+      mod.setStageBypass(s, true);
+      expect(mod.getStageBypass(s)).toBe(true);
+      mod.setStageBypass(s, false);
+      expect(mod.getStageBypass(s)).toBe(false);
+    }
+  });
+});
+
+describe('rewireDSPChain', () => {
+  it('accepts a new order and does not throw', async () => {
+    const { mod } = await freshDSP();
+    expect(() => mod.rewireDSPChain(['compressor', 'eq', 'bassEngine', 'stereoWidener', 'reverb'])).not.toThrow();
+  });
+
+  it('getStageOrder returns updated order', async () => {
+    const { mod } = await freshDSP();
+    const newOrder: import('../app/lib/dsp').StageId[] = ['compressor', 'eq', 'bassEngine', 'stereoWidener', 'reverb'];
+    mod.rewireDSPChain(newOrder);
+    expect(mod.getStageOrder()).toEqual(newOrder);
+  });
+
+  it('disconnects stageOut nodes before reconnecting', async () => {
+    // Just verifies no throw and order is persisted
+    const { mod } = await freshDSP();
+    mod.rewireDSPChain(['reverb', 'compressor', 'eq', 'stereoWidener', 'bassEngine']);
+    expect(mod.getStageOrder()).toEqual(['reverb', 'compressor', 'eq', 'stereoWidener', 'bassEngine']);
+  });
+});

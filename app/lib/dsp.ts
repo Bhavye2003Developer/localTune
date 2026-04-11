@@ -359,3 +359,39 @@ function wireStageChain(order: StageId[]): void {
 function scheduleSave(): void {
   // persistence wired in Task 5
 }
+
+// ─── Bypass ───────────────────────────────────────────────────────────────────
+
+const _bypassed: Partial<Record<StageId, boolean>> = {};
+
+export function setStageBypass(stage: StageId, bypassed: boolean): void {
+  _bypassed[stage] = bypassed;
+  if (stageWet[stage]) stageWet[stage]!.gain.value = bypassed ? 0 : 1;
+  if (stageDry[stage]) stageDry[stage]!.gain.value = bypassed ? 1 : 0;
+  scheduleSave();
+}
+
+export function getStageBypass(stage: StageId): boolean {
+  return _bypassed[stage] ?? false;
+}
+
+// ─── Rewire ───────────────────────────────────────────────────────────────────
+
+export function rewireDSPChain(newOrder: StageId[]): void {
+  if (!replayGainNode || !limiterNode) return;
+
+  // Disconnect current chain
+  replayGainNode.disconnect();
+  for (const id of _stageOrder) {
+    if (stageOut[id]) stageOut[id]!.disconnect();
+  }
+
+  // Reconnect in new order
+  _stageOrder = [...newOrder];
+  wireStageChain(_stageOrder);
+  scheduleSave();
+}
+
+export function getStageOrder(): StageId[] {
+  return [..._stageOrder];
+}
