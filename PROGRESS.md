@@ -41,6 +41,11 @@
 | `app/components/eq/EQCurve.tsx` | SVG EQ curve — 512 log-spaced points, mathematical biquad transfer function, draggable dots |
 | `app/components/eq/EQPanel.tsx` | EQ drawer shell — useReducer, bypass toggle, preset chips, Dexie save |
 | `app/hooks/useKeyboardShortcuts.ts` | Global keydown handler — Space/arrows/M/L/S/E/F/V/A//?/? |
+| `app/lib/dsp.ts` | DSP node creation, wiring, bypass, rewire, mutation, persistence |
+| `app/components/dsp/DSPPanel.tsx` | DSP chain drawer — sortable stage cards |
+| `app/components/dsp/DspCard.tsx` | Shared card wrapper with bypass toggle + drag handle |
+| `app/components/dsp/stages/*.tsx` | Per-stage UI components (6 stages) |
+| `public/ir/*.wav` | Impulse response WAVs for ConvolverNode |
 | `__tests__/playerReducer.test.ts` | Pure reducer unit tests (31 cases) |
 | `__tests__/eqReducer.test.ts` | EQ reducer unit tests (12 cases) |
 | `__tests__/playerContext.eq.test.ts` | EQ audio chain tests (6 cases) |
@@ -279,16 +284,16 @@
 
 ---
 
-### Feature 8 — Full DSP Signal Chain ❌
+### Feature 8 — Full DSP Signal Chain ✅
 
-- [ ] ReplayGain (read `REPLAYGAIN_TRACK_GAIN` tag)
-- [ ] Bass Engine (sub-bass shelf, bass compressor, mono bass mode, harmonic enhancer)
-- [ ] Parametric EQ nodes (same as Feature 2)
-- [ ] Compressor (`DynamicsCompressorNode` with full controls + GR meter)
-- [ ] Stereo Widener (`AudioWorkletProcessor` M-S matrix)
-- [ ] Convolution Reverb (`ConvolverNode` + 4 IR WAV presets in `/public/ir/`)
-- [ ] Brickwall Limiter at -0.1 dBFS
-- [ ] Drag-to-reorder DSP chain
+- [x] ReplayGain (read `REPLAYGAIN_TRACK_GAIN` tag)
+- [x] Bass Engine (sub-bass shelf, bass compressor, mono bass mode, harmonic enhancer)
+- [x] Parametric EQ nodes (same as Feature 2)
+- [x] Compressor (`DynamicsCompressorNode` with full controls + GR meter)
+- [x] Stereo Widener (`AudioWorkletProcessor` M-S matrix)
+- [x] Convolution Reverb (`ConvolverNode` + 4 IR WAV presets in `/public/ir/`)
+- [x] Brickwall Limiter at -0.1 dBFS
+- [x] Drag-to-reorder DSP chain
 
 ---
 
