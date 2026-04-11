@@ -7,6 +7,7 @@ import {
   useRef,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react';
 import jsmediatags from 'jsmediatags';
@@ -455,6 +456,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => { stateRef.current = state; }, [state]);
   const getState = () => stateRef.current;
 
+  const currentTrack = useMemo(
+    () => state.tracks.find(t => t.id === state.queue[state.queuePos]) ?? null,
+    [state.tracks, state.queue, state.queuePos]
+  );
+
   // ── Load / resume audio when queue position or playing changes ────────────
   useEffect(() => {
     if (!audioEl) return;
@@ -624,6 +630,29 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const cycleLoopMode = useCallback(() => dispatch({ type: 'CYCLE_LOOP_MODE' }), []);
   const setEQBandGainCb = useCallback((index: number, gainDb: number) => setEQBandGain(index, gainDb), []);
   const setEQBypassCb   = useCallback((on: boolean) => setEQBypass(on), []);
+
+  // ── Media Session API ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!navigator.mediaSession) return;
+    if (!currentTrack) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  currentTrack.title  || currentTrack.name,
+      artist: currentTrack.artist || '',
+      album:  currentTrack.album  || '',
+      artwork: currentTrack.coverUrl
+        ? [{ src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' }]
+        : [],
+    });
+
+    navigator.mediaSession.playbackState = state.playing ? 'playing' : 'paused';
+
+    navigator.mediaSession.setActionHandler('play',          () => togglePlay());
+    navigator.mediaSession.setActionHandler('pause',         () => togglePlay());
+    navigator.mediaSession.setActionHandler('previoustrack', () => prev());
+    navigator.mediaSession.setActionHandler('nexttrack',     () => next());
+    navigator.mediaSession.setActionHandler('seekto',        (e) => seek((e as MediaSessionActionDetails).seekTime ?? 0));
+  }, [currentTrack, state.playing, togglePlay, next, prev, seek]);
 
   return (
     <PlayerContext.Provider value={{
