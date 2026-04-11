@@ -356,8 +356,76 @@ function wireStageChain(order: StageId[]): void {
   stageOut[order[order.length - 1]]!.connect(limiterNode!);
 }
 
+// ─── Persistence ─────────────────────────────────────────────────────────────
+
 function scheduleSave(): void {
-  // persistence wired in Task 5
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      const { db } = await import('./db');
+      await db.dspSettings.put({ id: 'default', settings: JSON.stringify(_settings) });
+    } catch { /* IndexedDB unavailable (SSR / test) */ }
+  }, 500);
+}
+
+export async function loadDSPSettings(): Promise<DSPSettings> {
+  try {
+    const { db } = await import('./db');
+    const stored = await db.dspSettings.get('default');
+    if (stored) {
+      const parsed = JSON.parse(stored.settings) as DSPSettings;
+      _settings = {
+        stageOrder: parsed.stageOrder ?? [...DSP_DEFAULTS.stageOrder],
+        replayGain: { ...DSP_DEFAULTS.replayGain, ...parsed.replayGain },
+        bassEngine: { ...DSP_DEFAULTS.bassEngine, ...parsed.bassEngine },
+        compressor: { ...DSP_DEFAULTS.compressor, ...parsed.compressor },
+        stereoWidener: { ...DSP_DEFAULTS.stereoWidener, ...parsed.stereoWidener },
+        reverb: { ...DSP_DEFAULTS.reverb, ...parsed.reverb },
+      };
+      return _settings;
+    }
+  } catch { /* first run or SSR */ }
+  return {
+    stageOrder: [...DSP_DEFAULTS.stageOrder],
+    replayGain: { ...DSP_DEFAULTS.replayGain },
+    bassEngine: { ...DSP_DEFAULTS.bassEngine },
+    compressor: { ...DSP_DEFAULTS.compressor },
+    stereoWidener: { ...DSP_DEFAULTS.stereoWidener },
+    reverb: { ...DSP_DEFAULTS.reverb },
+  };
+}
+
+export function getDSPSettings(): DSPSettings {
+  return _settings;
+}
+
+export function applyLoadedSettings(): void {
+  // Called after initDSP + loadDSPSettings to restore persisted state
+  setStageBypass('eq', _settings.bassEngine.bypassed);  // note: each stage has own bypass
+  setStageBypass('bassEngine', _settings.bassEngine.bypassed);
+  setStageBypass('compressor', _settings.compressor.bypassed);
+  setStageBypass('stereoWidener', _settings.stereoWidener.bypassed);
+  setStageBypass('reverb', _settings.reverb.bypassed);
+
+  setBassSubBass(_settings.bassEngine.subBass);
+  setBassShelf(_settings.bassEngine.bassShelf);
+  setBassCompressorEnabled(_settings.bassEngine.compressor);
+  setBassMonoBass(_settings.bassEngine.monoBass);
+  setBassHarmonicEnhancer(_settings.bassEngine.harmonicEnhancer);
+
+  setCompressorThreshold(_settings.compressor.threshold);
+  setCompressorRatio(_settings.compressor.ratio);
+  setCompressorAttack(_settings.compressor.attack);
+  setCompressorRelease(_settings.compressor.release);
+  setCompressorKnee(_settings.compressor.knee);
+  setCompressorMakeupGain(_settings.compressor.makeupGain);
+
+  setStereoWidth(_settings.stereoWidener.width);
+  setReverbWet(_settings.reverb.wet);
+
+  if (_stageOrder.join() !== _settings.stageOrder.join()) {
+    rewireDSPChain(_settings.stageOrder);
+  }
 }
 
 // ─── Bypass ───────────────────────────────────────────────────────────────────

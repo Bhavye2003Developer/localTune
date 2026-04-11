@@ -214,3 +214,35 @@ describe('setStereoWidth', () => {
     expect(mod.getStereoWidth()).toBe(200);
   });
 });
+
+describe('setReverbPreset — IR cache', () => {
+  it('fetches IR WAV and caches as AudioBuffer', async () => {
+    const mockBuffer = { length: 1000 } as unknown as AudioBuffer;
+    const mockArrayBuffer = new ArrayBuffer(8);
+    global.fetch = vi.fn().mockResolvedValue({
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response);
+
+    const ctx = makeMockCtx();
+    ctx.decodeAudioData = vi.fn().mockResolvedValue(mockBuffer);
+    const { mod } = await freshDSP(ctx);
+
+    await mod.setReverbPreset('Studio');
+    expect(global.fetch).toHaveBeenCalledWith('/ir/Studio.wav');
+    expect(mod.getIRCache().get('Studio')).toBe(mockBuffer);
+  });
+
+  it('does not re-fetch on second call with same preset', async () => {
+    const mockArrayBuffer = new ArrayBuffer(8);
+    global.fetch = vi.fn().mockResolvedValue({
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response);
+
+    const ctx = makeMockCtx();
+    const { mod } = await freshDSP(ctx);
+
+    await mod.setReverbPreset('Hall');
+    await mod.setReverbPreset('Hall');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+});
