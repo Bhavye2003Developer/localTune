@@ -13,7 +13,14 @@ import {
 import jsmediatags from 'jsmediatags';
 import { toast } from 'sonner';
 import { db } from './db';
-import { INITIAL_BANDS } from './eqPresets';
+import {
+  initDSP,
+  loadDSPSettings,
+  applyLoadedSettings,
+  setEQBandGain as dspSetEQBandGain,
+  setEQBypass as dspSetEQBypass,
+  setReplayGain,
+} from './dsp';
 
 // ─── Track type ───────────────────────────────────────────────────────────────
 
@@ -266,9 +273,6 @@ let audioEl: HTMLAudioElement | null = null;
 let audioCtx: AudioContext | null = null;
 let _analyserNode: AnalyserNode | null = null;
 let gainNode: GainNode | null = null;
-let eqNodes: BiquadFilterNode[] = [];
-let eqBypassGains: number[] = [];
-
 export function ensureAudio() {
   if (audioEl) return;
   audioEl = new Audio();
@@ -277,38 +281,15 @@ export function ensureAudio() {
   _analyserNode.fftSize = 2048;
   gainNode = audioCtx.createGain();
 
-  // Create 10 BiquadFilter nodes from INITIAL_BANDS config
-  eqNodes = INITIAL_BANDS.map(band => {
-    const node = audioCtx!.createBiquadFilter();
-    node.type = band.type;
-    node.frequency.value = band.freq;
-    node.Q.value = band.q;
-    node.gain.value = 0;
-    return node;
-  });
-
-  // Chain: src → analyser → eq[0..9] → gainNode → destination
   const src = audioCtx.createMediaElementSource(audioEl);
   src.connect(_analyserNode);
-  _analyserNode.connect(eqNodes[0]);
-  for (let i = 0; i < eqNodes.length - 1; i++) {
-    eqNodes[i].connect(eqNodes[i + 1]);
-  }
-  eqNodes[eqNodes.length - 1].connect(gainNode);
+
+  // DSP chain: analyser → [full DSP pipeline] → gainNode → destination
+  initDSP(audioCtx, _analyserNode, gainNode);
   gainNode.connect(audioCtx.destination);
-}
 
-export function setEQBandGain(index: number, gainDb: number): void {
-  if (eqNodes[index]) eqNodes[index].gain.value = gainDb;
-}
-
-export function setEQBypass(on: boolean): void {
-  if (on) {
-    eqBypassGains = eqNodes.map(n => n.gain.value);
-    eqNodes.forEach(n => { n.gain.value = 0; });
-  } else {
-    eqNodes.forEach((n, i) => { n.gain.value = eqBypassGains[i] ?? 0; });
-  }
+  // Restore persisted DSP settings async
+  loadDSPSettings().then(() => applyLoadedSettings());
 }
 
 // ─── FFmpeg lazy loader ───────────────────────────────────────────────────────
@@ -397,18 +378,19 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
 
 // ─── ID3 metadata extraction ──────────────────────────────────────────────────
 
-function readTags(file: File): Promise<{ title?: string; artist?: string; album?: string; coverUrl?: string }> {
+function readTags(file: File): Promise<{ title?: string; artist?: string; album?: string; coverUrl?: string; replayGain?: string }> {
   return new Promise(resolve => {
     jsmediatags.read(file, {
       onSuccess: tag => {
         const { title, artist, album, picture } = tag.tags;
+        const replayGain = (tag.tags as Record<string, string>)['REPLAYGAIN_TRACK_GAIN'] ?? undefined;
         let coverUrl = '';
         if (picture) {
           const bytes = new Uint8Array(picture.data);
           const blob = new Blob([bytes], { type: picture.format });
           coverUrl = URL.createObjectURL(blob);
         }
-        resolve({ title: title || '', artist: artist || '', album: album || '', coverUrl });
+        resolve({ title: title || '', artist: artist || '', album: album || '', coverUrl, replayGain });
       },
       onError: () => resolve({}),
     });
@@ -511,6 +493,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  // Reset ReplayGain to unity on track change; readTags callback will re-apply if available
+  useEffect(() => {
+    setReplayGain(null);
+  }, [state.queuePos]);
+
   // ── Actions ───────────────────────────────────────────────────────────────
 
   const loadFiles = useCallback(async (files: FileList | File[]) => {
@@ -557,6 +544,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (meta.album) patch.album = meta.album;
         if (meta.coverUrl) patch.coverUrl = meta.coverUrl;
         if (Object.keys(patch).length > 0) dispatch({ type: 'UPDATE_TRACK', id: track.id, patch });
+
+        // Apply ReplayGain if this is the currently playing track
+        if (meta.replayGain !== undefined) {
+          const cur = stateRef.current;
+          if (cur.queue[cur.queuePos] === track.id) {
+            setReplayGain(meta.replayGain ?? null);
+          }
+        }
 
         // Upsert metadata to Dexie (no blob URLs — session-scoped)
         const storedEntry = {
@@ -628,8 +623,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const clearLoop     = useCallback(() => dispatch({ type: 'CLEAR_LOOP' }), []);
   const cycleShuffle  = useCallback(() => dispatch({ type: 'CYCLE_SHUFFLE' }), []);
   const cycleLoopMode = useCallback(() => dispatch({ type: 'CYCLE_LOOP_MODE' }), []);
-  const setEQBandGainCb = useCallback((index: number, gainDb: number) => setEQBandGain(index, gainDb), []);
-  const setEQBypassCb   = useCallback((on: boolean) => setEQBypass(on), []);
+  const setEQBandGainCb = useCallback((index: number, gainDb: number) => dspSetEQBandGain(index, gainDb), []);
+  const setEQBypassCb   = useCallback((on: boolean) => dspSetEQBypass(on), []);
 
   // ── Media Session API ─────────────────────────────────────────────────────
   useEffect(() => {
