@@ -169,4 +169,11 @@ describe('useKeyboardShortcuts — new shortcuts', () => {
     fireKey('f');
     expect(mockRequestFullscreen).toHaveBeenCalledOnce();
   });
+
+  it('d fires onToggleDSP callback', () => {
+    const opts = { onOpenShortcuts: vi.fn(), focusSearch: vi.fn(), onToggleDSP: vi.fn() };
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey('d');
+    expect(opts.onToggleDSP).toHaveBeenCalledOnce();
+  });
 });
