@@ -8,6 +8,7 @@ interface DSPPanelProps {
   onClose: () => void;
 }
 
+// TODO Task 14: wire onClose to close button / keyboard-escape handler
 export const DSPPanel = memo(function DSPPanel({ open, onClose: _onClose }: DSPPanelProps) {
   return (
     <div

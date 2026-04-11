@@ -33,11 +33,12 @@ export const DspCard = memo(function DspCard({
       <div className="flex items-center gap-2 px-3 py-2 select-none">
         {showDragHandle && (
           <span
-            {...(dragHandleProps as object)}
+            {...dragHandleProps}
             className="cursor-grab text-white/20 hover:text-white/60 transition-colors px-0.5 touch-manipulation"
             title="Drag to reorder"
           >
-            ⠿
+            <span aria-hidden="true">⠿</span>
+            <span className="sr-only">drag handle</span>
           </span>
         )}
 
@@ -45,7 +46,7 @@ export const DspCard = memo(function DspCard({
           <button
             onClick={() => onBypassToggle(!bypassed)}
             title={bypassed ? 'Enable stage' : 'Bypass stage'}
-            className="w-6 h-6 flex items-center justify-center shrink-0 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center shrink-0 transition-colors touch-manipulation"
             style={{ color: bypassed ? 'var(--nx-text-dim)' : 'var(--nx-cyan)' }}
           >
             <Power size={13} />
