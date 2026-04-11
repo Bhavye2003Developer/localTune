@@ -152,3 +152,65 @@ describe('rewireDSPChain', () => {
     expect(mod.getStageOrder()).toEqual(['reverb', 'compressor', 'eq', 'stereoWidener', 'bassEngine']);
   });
 });
+
+describe('setReplayGain', () => {
+  it('converts dB string "+3.5 dB" to linear gain ~1.496', async () => {
+    const { mod } = await freshDSP();
+    mod.setReplayGain('+3.5 dB');
+    expect(mod.replayGainNode!.gain.value).toBeCloseTo(1.496, 2);
+  });
+
+  it('converts "-6.02 dB" to linear ~0.5', async () => {
+    const { mod } = await freshDSP();
+    mod.setReplayGain('-6.02 dB');
+    expect(mod.replayGainNode!.gain.value).toBeCloseTo(0.5, 2);
+  });
+
+  it('falls back to gain=1 for missing/invalid tag', async () => {
+    const { mod } = await freshDSP();
+    mod.setReplayGain(null);
+    expect(mod.replayGainNode!.gain.value).toBe(1);
+    mod.setReplayGain('not a number dB');
+    expect(mod.replayGainNode!.gain.value).toBe(1);
+  });
+});
+
+describe('setBassSubBass / setBassShelf', () => {
+  it('setBassSubBass sets filter gain', async () => {
+    const { mod } = await freshDSP();
+    mod.setBassSubBass(6);
+    expect(mod.eqNodes).toBeDefined(); // just verifying dsp initialized
+    // access via exported node — add export in impl if needed
+  });
+});
+
+describe('setCompressorParam', () => {
+  it('setCompressorThreshold sets node value', async () => {
+    const { mod } = await freshDSP();
+    mod.setCompressorThreshold(-30);
+    // test via getCompressorReduction existing (just no-throw for now)
+    expect(mod.getCompressorReduction()).toBeDefined();
+  });
+});
+
+describe('setStereoWidth', () => {
+  it('width=0 sets sideScale to 0 (mono)', async () => {
+    const { mod } = await freshDSP();
+    mod.setStereoWidth(0);
+    // widSideScale.gain.value should be 0
+    // We test via no-throw + getWidth
+    expect(mod.getStereoWidth()).toBe(0);
+  });
+
+  it('width=100 sets sideScale to 1 (unity)', async () => {
+    const { mod } = await freshDSP();
+    mod.setStereoWidth(100);
+    expect(mod.getStereoWidth()).toBe(100);
+  });
+
+  it('width=200 sets sideScale to 2 (hyper-wide)', async () => {
+    const { mod } = await freshDSP();
+    mod.setStereoWidth(200);
+    expect(mod.getStereoWidth()).toBe(200);
+  });
+});

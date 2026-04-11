@@ -395,3 +395,164 @@ export function rewireDSPChain(newOrder: StageId[]): void {
 export function getStageOrder(): StageId[] {
   return [..._stageOrder];
 }
+
+// ─── ReplayGain ───────────────────────────────────────────────────────────────
+
+export function setReplayGain(tagValue: string | null | undefined): void {
+  if (!replayGainNode) return;
+  if (!tagValue) { replayGainNode.gain.value = 1; return; }
+  const match = tagValue.match(/^([+-]?\d+(?:\.\d+)?)\s*dB$/i);
+  if (!match) { replayGainNode.gain.value = 1; return; }
+  replayGainNode.gain.value = dbToLinear(parseFloat(match[1]));
+}
+
+// ─── EQ (same API as before, now in dsp.ts) ───────────────────────────────────
+
+export function setEQBandGain(index: number, gainDb: number): void {
+  if (eqNodes[index]) eqNodes[index].gain.value = gainDb;
+}
+
+export function setEQBypass(on: boolean): void {
+  setStageBypass('eq', on);
+}
+
+// ─── Bass Engine ──────────────────────────────────────────────────────────────
+
+export function setBassSubBass(db: number): void {
+  if (bassSubBassNode) bassSubBassNode.gain.value = db;
+  _settings.bassEngine.subBass = db;
+  scheduleSave();
+}
+
+export function setBassShelf(db: number): void {
+  if (bassBassShelfNode) bassBassShelfNode.gain.value = db;
+  _settings.bassEngine.bassShelf = db;
+  scheduleSave();
+}
+
+export function setBassCompressorEnabled(enabled: boolean): void {
+  if (!bassCompNode) return;
+  if (enabled) {
+    bassCompNode.threshold.value = -24;
+    bassCompNode.ratio.value = 4;
+  } else {
+    bassCompNode.threshold.value = 0;
+    bassCompNode.ratio.value = 1;
+  }
+  _settings.bassEngine.compressor = enabled;
+  scheduleSave();
+}
+
+export function setBassMonoBass(enabled: boolean): void {
+  if (bassMonoWet) bassMonoWet.gain.value = enabled ? 1 : 0;
+  if (bassMonoDry) bassMonoDry.gain.value = enabled ? 0 : 1;
+  _settings.bassEngine.monoBass = enabled;
+  scheduleSave();
+}
+
+export function setBassHarmonicEnhancer(enabled: boolean): void {
+  if (!bassHarmonicNode) return;
+  if (enabled) {
+    const n = 256;
+    const curve = new Float32Array(n);
+    const amount = 200;
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / n - 1;
+      curve[i] = ((Math.PI + amount) * x) / (Math.PI + amount * Math.abs(x));
+    }
+    bassHarmonicNode.curve = curve;
+  } else {
+    bassHarmonicNode.curve = null;
+  }
+  _settings.bassEngine.harmonicEnhancer = enabled;
+  scheduleSave();
+}
+
+// ─── Compressor ───────────────────────────────────────────────────────────────
+
+export function setCompressorThreshold(db: number): void {
+  if (compNode) compNode.threshold.value = db;
+  _settings.compressor.threshold = db;
+  scheduleSave();
+}
+
+export function setCompressorRatio(ratio: number): void {
+  if (compNode) compNode.ratio.value = ratio;
+  _settings.compressor.ratio = ratio;
+  scheduleSave();
+}
+
+export function setCompressorAttack(s: number): void {
+  if (compNode) compNode.attack.value = s;
+  _settings.compressor.attack = s;
+  scheduleSave();
+}
+
+export function setCompressorRelease(s: number): void {
+  if (compNode) compNode.release.value = s;
+  _settings.compressor.release = s;
+  scheduleSave();
+}
+
+export function setCompressorKnee(db: number): void {
+  if (compNode) compNode.knee.value = db;
+  _settings.compressor.knee = db;
+  scheduleSave();
+}
+
+export function setCompressorMakeupGain(db: number): void {
+  if (compMakeupGain) compMakeupGain.gain.value = dbToLinear(db);
+  _settings.compressor.makeupGain = db;
+  scheduleSave();
+}
+
+export function getCompressorReduction(): number {
+  return compNode?.reduction ?? 0;
+}
+
+// ─── Stereo Widener ───────────────────────────────────────────────────────────
+
+let _stereoWidth = 100;
+
+export function setStereoWidth(width: number): void {
+  _stereoWidth = width;
+  if (widSideScale) widSideScale.gain.value = width / 100;
+  _settings.stereoWidener.width = width;
+  scheduleSave();
+}
+
+export function getStereoWidth(): number {
+  return _stereoWidth;
+}
+
+// ─── Reverb ───────────────────────────────────────────────────────────────────
+
+export function setReverbWet(wet: number): void {
+  if (reverbWetGain)      reverbWetGain.gain.value      = wet;
+  if (reverbDryPassthrough) reverbDryPassthrough.gain.value = 1 - wet;
+  _settings.reverb.wet = wet;
+  scheduleSave();
+}
+
+export async function setReverbPreset(preset: DSPSettings['reverb']['preset']): Promise<void> {
+  if (!_ctx || !convolverNode) return;
+  _settings.reverb.preset = preset;
+
+  if (!irCache.has(preset)) {
+    try {
+      const res = await fetch(`/ir/${preset}.wav`);
+      const buf = await res.arrayBuffer();
+      const decoded = await _ctx.decodeAudioData(buf);
+      irCache.set(preset, decoded);
+    } catch {
+      return; // IR load failed — keep existing buffer
+    }
+  }
+
+  convolverNode.buffer = irCache.get(preset) ?? null;
+  scheduleSave();
+}
+
+export function getIRCache(): Map<string, AudioBuffer> {
+  return irCache;
+}
