@@ -1,7 +1,7 @@
 # FineTune V1 — Build Progress
 
 > Spec source: `FineTune_V1_Spec-1.md`
-> Last updated: 2026-04-05 (session 7 — EQ multi-preset + saved configs)
+> Last updated: 2026-04-11 (session 8 — Full DSP Signal Chain)
 
 ---
 
@@ -23,7 +23,6 @@
 | `app/layout.tsx` | Next.js root layout |
 | `app/lib/playerContext.tsx` | Core playback state, Web Audio singleton, jsmediatags extraction, `getAudioEl()` for RAF access |
 | `app/lib/db.ts` | Dexie schema — `tracks` + `eqPresets` tables |
-| `app/lib/audioData.tsx` | `AudioDataProvider` — feeds analyser FFT data to visualizer |
 | `app/lib/utils.ts` | `isIOS()`, `KEY_NAMES` constant |
 | `app/types/jsmediatags.d.ts` | Type declaration for `jsmediatags` (no upstream types) |
 | `app/components/player/PlayerLoader.tsx` | `'use client'` wrapper for `next/dynamic` ssr:false |
@@ -32,22 +31,20 @@
 | `app/components/player/TrackLibrary.tsx` | Virtualised track list (`@tanstack/react-virtual`); forwardRef search input + `focusSearch` handle |
 | `app/components/player/PlayerBar.tsx` | Bottom control bar — all transport + secondary controls; album-art button opens Now Playing |
 | `app/components/player/NowPlayingPanel.tsx` | Full-screen Now Playing overlay — album art, metadata badges, color-thief gradient |
+| `app/components/player/NowPlayingStage.tsx` | Now Playing stage component |
 | `app/components/player/KeyboardShortcutsOverlay.tsx` | Modal listing all keyboard shortcuts (`?` key) |
-| `app/components/visualizer/VisualizerLoader.tsx` | `'use client'` wrapper with `next/dynamic` ssr:false |
-| `app/components/visualizer/VisualizerContainer.tsx` | Canvas + key picker + album color extraction + Bloom pass |
-| `app/components/visualizer/NebulaScene.tsx` | GLSL particle system — 4-shape morphing, audio-reactive, `uColorTint` uniform |
 | `app/components/player/QueueSidebar.tsx` | dnd-kit sortable queue sidebar |
 | `app/lib/eqPresets.ts` | Band/EQState interfaces, INITIAL_BANDS (10 bands), BUILTIN_PRESETS (8), eqReducer |
 | `app/components/eq/EQCurve.tsx` | SVG EQ curve — 512 log-spaced points, mathematical biquad transfer function, draggable dots |
 | `app/components/eq/EQPanel.tsx` | EQ drawer shell — useReducer, bypass toggle, preset chips, Dexie save |
 | `app/hooks/useKeyboardShortcuts.ts` | Global keydown handler — Space/arrows/M/L/S/E/F/V/A//?/? |
 | `__tests__/playerReducer.test.ts` | Pure reducer unit tests (31 cases) |
-| `__tests__/eqReducer.test.ts` | EQ reducer unit tests (12 cases) |
+| `__tests__/eqReducer.test.ts` | EQ reducer unit tests (17 cases) |
 | `__tests__/playerContext.eq.test.ts` | EQ audio chain tests (6 cases) |
 | `__tests__/EQCurve.test.tsx` | EQCurve component + math tests (14 cases) |
-| `__tests__/EQPanel.test.tsx` | EQPanel component tests (11 cases) |
-| `__tests__/useKeyboardShortcuts.test.tsx` | Hook unit tests (17 cases) |
-| `__tests__/visualizer.test.tsx` | Visualizer component tests (7 cases) |
+| `__tests__/EQPanel.test.tsx` | EQPanel component tests (14 cases) |
+| `__tests__/useKeyboardShortcuts.test.tsx` | Hook unit tests (16 cases) |
+| `__tests__/mediaSession.test.tsx` | Media Session API tests (8 cases) |
 | `vitest.config.ts` | Vitest config |
 | `vitest.setup.ts` | jest-dom setup |
 
@@ -157,9 +154,8 @@
 | `M` | Mute toggle | ✅ |
 | `L` | Cycle loop mode | ✅ |
 | `S` | Shuffle toggle | ✅ |
-| `F` | Full-screen visualizer | ✅ |
-| `V` | Cycle visualizer mode | ✅ |
 | `E` | Toggle EQ panel | ✅ |
+| `D` | Toggle DSP chain panel | ❌ Deferred — DSP not merged to main yet |
 | `C` | Toggle chord timeline | ❌ Deferred — next session (Feature 4 not built) |
 | `B` | Toggle metronome | ❌ Deferred — next session (Feature 5 not built) |
 | `A` | Set A loop point | ✅ |
@@ -190,25 +186,6 @@
 ---
 
 ## Features
-
-### Feature 1 — WebGL Nebula Visualizer ✅
-
-- [x] Full-screen WebGL particle system (`@react-three/fiber`, `three`)
-- [x] 12,000 particles (desktop) / 3,200 (iOS)
-- [x] Bass-reactive particle explosion (`uBass` uniform, smoothed — no snap on pause/resume)
-- [x] Mid-frequency vortex rotation (`uMid` uniform, smoothed)
-- [x] Key-driven shape morphing — 4 shapes blending across chromatic circle
-  - Sphere (C), Torus (Eb), Hyperboloid (Gb), Star (A)
-- [x] Smooth key transitions — module-level `interpKey` lerp at 0.02/frame
-- [x] `OrbitControls` (pan disabled, zoom disabled)
-- [x] iOS detection — reduced particles, antialiasing off, DPR 1
-- [x] Musical key picker UI (12 buttons, top-right)
-- [x] Album Color Mode (`V` key cycles; `uColorTint`/`uTintStrength` uniforms; ColorThief extraction)
-- [x] Bloom post-processing (`EffectComposer` + `Bloom` — iOS skipped)
-
-> Note: Terrain mode and Scope mode removed from spec — not needed.
-
----
 
 ### Feature 2 — 10-Band Parametric EQ ✅
 
@@ -279,16 +256,19 @@
 
 ---
 
-### Feature 8 — Full DSP Signal Chain ❌
+### Feature 8 — Full DSP Signal Chain 🔶 (branch only — not merged)
 
-- [ ] ReplayGain (read `REPLAYGAIN_TRACK_GAIN` tag)
-- [ ] Bass Engine (sub-bass shelf, bass compressor, mono bass mode, harmonic enhancer)
-- [ ] Parametric EQ nodes (same as Feature 2)
-- [ ] Compressor (`DynamicsCompressorNode` with full controls + GR meter)
-- [ ] Stereo Widener (`AudioWorkletProcessor` M-S matrix)
-- [ ] Convolution Reverb (`ConvolverNode` + 4 IR WAV presets in `/public/ir/`)
-- [ ] Brickwall Limiter at -0.1 dBFS
-- [ ] Drag-to-reorder DSP chain
+> Built on `feature/feature8-dsp` branch. Not yet merged to `dev`/`master`.
+
+- [x] ReplayGain (read `REPLAYGAIN_TRACK_GAIN` tag)
+- [x] Bass Engine (sub-bass shelf, bass compressor, mono bass mode, harmonic enhancer)
+- [x] Parametric EQ nodes (same as Feature 2)
+- [x] Compressor (`DynamicsCompressorNode` with full controls + GR meter)
+- [x] Stereo Widener (native M-S matrix via ChannelSplitter/Merger)
+- [x] Convolution Reverb (`ConvolverNode` + 4 IR WAV presets in `/public/ir/`)
+- [x] Brickwall Limiter at -0.1 dBFS
+- [x] Drag-to-reorder DSP chain (dnd-kit, PointerSensor + TouchSensor)
+- [x] `D` keyboard shortcut for DSP panel
 
 ---
 
@@ -324,7 +304,6 @@
 
 - [x] `color-thief-browser` dominant color extraction from `coverUrl`
 - [x] Animated gradient background in player (NowPlayingPanel radial gradient)
-- [x] Nebula particle palette tied to album color (`uColorTint` + `uTintStrength` uniforms)
 - [ ] Hash-based gradient fallback for tracks without art
 
 ---
@@ -371,10 +350,6 @@ All shortcuts listed in spec — none implemented yet.
 | `dexie` | IndexedDB | ✅ |
 | `lucide-react` | Icons | ✅ |
 | `sonner` | Toast notifications | ✅ |
-| `three` | WebGL | ✅ |
-| `@react-three/fiber` | React Three.js | ✅ |
-| `@react-three/drei` | Three helpers | ✅ |
-| `@react-three/postprocessing` | Bloom etc. | ✅ |
 | `@tanstack/react-virtual` | Virtual list | ✅ |
 | `color-thief-browser` | Color extraction | ✅ |
 | `jsmediatags` | ID3 tags | ✅ |
@@ -386,7 +361,7 @@ All shortcuts listed in spec — none implemented yet.
 | `ably` | Global chat | ❌ not installed |
 | `@emoji-mart/react` | Emoji picker | ❌ not installed |
 | `next-pwa` | PWA / Service Worker | ❌ not installed |
-| `@ffmpeg/ffmpeg` + `@ffmpeg/util` | Format fallback transcoder | ❌ not installed |
+| `@ffmpeg/ffmpeg` + `@ffmpeg/util` | Format fallback transcoder | ✅ |
 
 ---
 
@@ -398,8 +373,6 @@ All shortcuts listed in spec — none implemented yet.
 - `EQCurve.tsx`: Wrapped in `React.memo`; memoized 512-point biquad path with `useMemo(bands)`; static grid elements hoisted to module level; `bandsRef` stabilizes pointer callbacks
 - `EQPanel.tsx`: Wrapped in `React.memo` — prevents re-renders from parent TICK dispatches
 - `PlayerBar.tsx`: Wrapped in `React.memo`
-- `VisualizerContainer.tsx`: Wrapped in `React.memo` — prevents Canvas re-creation on parent state changes
-- `NebulaScene.tsx`: `isIOS()` call moved to module-level constant (was called every render); removed no-op `useEffect`
 - `PlayerShell.tsx`: `currentTrack` wrapped in `useMemo`; all inline arrow handlers replaced with `useCallback`
 - `vitest.config.ts`: Excluded `.worktrees/**` from test runs to fix phantom failures
 - `app/types/color-thief-browser.d.ts`: Added missing type declaration — fixes production build TS error
@@ -417,7 +390,6 @@ All UI components now work on screens < 640px with ≥ 44px touch targets.
 - `KeyboardShortcutsOverlay.tsx`: `w-full mx-4 sm:w-80`; `max-h-[80vh] overflow-y-auto`; added `E → Toggle EQ` entry
 - `EQPanel.tsx`: Preset chips `overflow-x-auto sm:flex-wrap`; buttons `py-1 shrink-0 touch-manipulation`
 - `TrackLibrary.tsx`: Long-press (500ms) opens context menu on mobile; menu position clamped to viewport; menu buttons `py-2.5 touch-manipulation` (44px)
-- `VisualizerContainer.tsx`: Mobile key picker toggle button; grid hidden on mobile until toggled; grid buttons `w-8 h-8` on mobile
 - `app/globals.css`: `.pb-safe` utility; `overscroll-behavior: none` on html/body
 - `app/layout.tsx`: `viewport` moved to separate `export const viewport: Viewport` (Next.js 16 API)
 
@@ -426,10 +398,9 @@ All UI components now work on screens < 640px with ≥ 44px touch targets.
 ## What's Next (Recommended Build Order)
 
 1. **Feature 3 — BPM/Key/Mood Analysis** — unlocks Features 4, 5, 13, and Step 8 analysis chips
-3. **Feature 4 — Chord Detection** — unlocks `C` shortcut
-4. **Feature 5 — Metronome** — unlocks `B` shortcut
-5. **Feature 10 — Media Session API** — small effort, huge perceived quality
-6. **Feature 11 — Waveform Display** — visual anchor for A-B markers
-7. **Feature 6 — Gapless Playback**
-8. **Feature 15 — PWA**
-9. **Features 7 (pitch shift), 8, 9, 13, 14** — advanced/networked features
+2. **Feature 4 — Chord Detection** — unlocks `C` shortcut
+3. **Feature 5 — Metronome** — unlocks `B` shortcut
+4. **Feature 11 — Waveform Display** — visual anchor for A-B markers
+5. **Feature 6 — Gapless Playback**
+6. **Feature 15 — PWA**
+7. **Features 7 (pitch shift), 9, 13, 14** — advanced/networked features
