@@ -15,6 +15,11 @@ export interface StoredTrack {
   mood?: string;
 }
 
+export interface StoredFileBlob {
+  fileId: string;   // primary key — matches StoredTrack.fileId
+  blob: Blob;
+}
+
 export interface EQPreset {
   id?: number;
   name: string;
@@ -30,6 +35,7 @@ export class FineTuneDB extends Dexie {
   tracks!: Table<StoredTrack>;
   eqPresets!: Table<EQPreset>;
   dspSettings!: Table<StoredDSPSettings>;
+  fileBlobs!: Table<StoredFileBlob>;
 
   constructor() {
     super('finetune_v1');
@@ -41,6 +47,12 @@ export class FineTuneDB extends Dexie {
       tracks:      '++id, fileId, name',
       eqPresets:   '++id, name',
       dspSettings: 'id',
+    });
+    this.version(3).stores({
+      tracks:      '++id, fileId, name',
+      eqPresets:   '++id, name',
+      dspSettings: 'id',
+      fileBlobs:   'fileId',
     });
   }
 }

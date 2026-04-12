@@ -44,8 +44,9 @@ function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, 
         opacity: isDragging ? 0.4 : 1,
         borderLeft: isCurrent ? '2px solid var(--a)' : '2px solid transparent',
         background: isCurrent ? '#f59e0b08' : undefined,
+        paddingTop: 4, paddingBottom: 4, paddingLeft: 14, paddingRight: 14, minHeight: 40,
       }}
-      className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none group transition-colors"
+      className="flex items-center gap-2 cursor-pointer select-none group transition-colors"
       onClick={() => onPlay(id)}
       onMouseEnter={e => {
         if (!isCurrent) (e.currentTarget as HTMLDivElement).style.background = 'var(--s3)';

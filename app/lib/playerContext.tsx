@@ -13,6 +13,8 @@ import {
 import jsmediatags from 'jsmediatags';
 import { toast } from 'sonner';
 import { db } from './db';
+
+const BLOB_STORAGE_LIMIT = 150 * 1024 * 1024; // 150 MB
 import {
   initDSP,
   loadDSPSettings,
@@ -438,6 +440,57 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => { stateRef.current = state; }, [state]);
   const getState = () => stateRef.current;
 
+  // ── Restore persisted files from IndexedDB on mount ───────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [storedTracks, storedBlobs] = await Promise.all([
+        db.tracks.toArray(),
+        db.fileBlobs.toArray(),
+      ]);
+      if (cancelled || storedBlobs.length === 0) return;
+
+      const blobMap = new Map(storedBlobs.map(b => [b.fileId, b.blob]));
+      const tracks: Track[] = [];
+
+      for (const st of storedTracks) {
+        const blob = blobMap.get(st.fileId);
+        if (!blob) continue;
+        tracks.push({
+          id: st.fileId,
+          name: st.name,
+          title: st.title,
+          artist: st.artist ?? '',
+          album: st.album ?? '',
+          size: st.size,
+          type: st.type,
+          url: URL.createObjectURL(blob),
+          coverUrl: '',
+          duration: st.duration,
+        });
+      }
+
+      if (cancelled || tracks.length === 0) return;
+
+      const wasNull = !audioEl;
+      ensureAudio();
+      if (wasNull) attachAudioEvents(dispatch, getState);
+
+      dispatch({ type: 'ADD_TRACKS', tracks });
+
+      // Re-read tags to restore cover art (blob → File for jsmediatags)
+      tracks.forEach((track, i) => {
+        const blob = blobMap.get(track.id);
+        if (!blob) return;
+        const file = new File([blob], track.name, { type: track.type });
+        readTags(file).then(meta => {
+          if (meta.coverUrl) dispatch({ type: 'UPDATE_TRACK', id: track.id, patch: { coverUrl: meta.coverUrl } });
+        });
+      });
+    })();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const currentTrack = useMemo(
     () => state.tracks.find(t => t.id === state.queue[state.queuePos]) ?? null,
     [state.tracks, state.queue, state.queuePos]
@@ -505,8 +558,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     ensureAudio();
     if (wasNull) attachAudioEvents(dispatch, getState);
     if (audioCtx?.state === 'suspended') audioCtx.resume();
+    const existingIds = new Set(stateRef.current.tracks.map(t => t.id));
     const arr = Array.from(files).filter(
-      f => f.type.startsWith('audio/') || f.type.startsWith('video/')
+      f => (f.type.startsWith('audio/') || f.type.startsWith('video/'))
+        && !existingIds.has(`${f.name}-${f.size}`)
     );
     if (arr.length === 0) return;
 
@@ -570,6 +625,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           .catch(() => {});
       });
     });
+
+    // Store file blobs for session restore — respect 150 MB cap
+    (async () => {
+      const existingBlobs = await db.fileBlobs.toArray();
+      const existingBlobIds = new Set(existingBlobs.map(b => b.fileId));
+      const storedBytes = existingBlobs.reduce((sum, b) => sum + b.blob.size, 0);
+      let budget = BLOB_STORAGE_LIMIT - storedBytes;
+      let limitHit = false;
+
+      for (const f of arr) {
+        const fileId = `${f.name}-${f.size}`;
+        if (existingBlobIds.has(fileId)) continue;
+        if (f.size > budget) { limitHit = true; continue; }
+        budget -= f.size;
+        db.fileBlobs.put({ fileId, blob: f }).catch(() => {});
+      }
+
+      if (limitHit) {
+        toast.error('Storage limit (150 MB) reached — some files won\'t persist between sessions');
+      }
+    })();
   }, []);
 
   const playNow = useCallback((id: string) => {

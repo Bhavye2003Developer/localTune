@@ -1,9 +1,9 @@
 'use client';
 
 import { memo } from 'react';
-import { BookOpen, Music2 } from 'lucide-react';
+import { BookOpen, Music2, ListMusic } from 'lucide-react';
 
-export type MobileTab = 'library' | 'player';
+export type MobileTab = 'library' | 'queue' | 'player';
 
 interface Props {
   activeTab: MobileTab;
@@ -12,8 +12,9 @@ interface Props {
 
 export const MobileBottomNav = memo(function MobileBottomNav({ activeTab, onSwitch }: Props) {
   const tabs: { id: MobileTab; label: string; Icon: typeof BookOpen }[] = [
-    { id: 'library', label: 'Library', Icon: BookOpen },
-    { id: 'player',  label: 'Player',  Icon: Music2  },
+    { id: 'library', label: 'Library',  Icon: BookOpen  },
+    { id: 'queue',   label: 'Queue',    Icon: ListMusic  },
+    { id: 'player',  label: 'Player',   Icon: Music2     },
   ];
 
   return (

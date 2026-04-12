@@ -32,16 +32,6 @@ function Chip({ children, accent }: { children: React.ReactNode; accent?: boolea
   );
 }
 
-function PlaceholderChip({ label }: { label: string }) {
-  return (
-    <span
-      className="px-2 py-0.5 rounded"
-      style={{ color: 'var(--t3)', border: '1px solid var(--br)', background: 'var(--s3)', fontSize: 9, fontWeight: 500 }}
-    >
-      {label}&nbsp;—
-    </span>
-  );
-}
 
 function StandbyBlock() {
   return (
@@ -95,8 +85,8 @@ export function NowPlayingStage() {
       <div className="flex-1 min-w-0 flex flex-col gap-2">
         <div>
           <p
-            className="line-clamp-2 leading-snug"
-            style={{ color: 'var(--t1)', fontSize: 22, fontWeight: 800 }}
+            className="truncate leading-snug"
+            style={{ color: 'var(--t1)', fontSize: 26, fontWeight: 800 }}
           >
             {track.title}
           </p>
@@ -117,10 +107,6 @@ export function NowPlayingStage() {
           <Chip accent>{fmtLabel(track.type)}</Chip>
           <Chip>{fmtBytes(track.size)}</Chip>
           {track.duration > 0 && <Chip>{formatTime(track.duration)}</Chip>}
-          {/* Analysis placeholders — will populate when Feature 3 ships */}
-          <PlaceholderChip label="Key" />
-          <PlaceholderChip label="BPM" />
-          <PlaceholderChip label="Mood" />
         </div>
       </div>
     </div>

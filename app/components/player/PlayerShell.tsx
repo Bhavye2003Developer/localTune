@@ -84,13 +84,13 @@ function MarksPanel() {
 function SmartPlaylistsPlaceholder() {
   return (
     <div
-      className="shrink-0 px-4 py-3"
-      style={{ borderTop: '1px solid var(--br)' }}
+      className="shrink-0"
+      style={{ borderTop: '1px solid var(--br)', padding: '8px 14px' }}
     >
-      <p style={{ color: 'var(--t3)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <p style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         Smart Playlists
       </p>
-      <p className="mt-1" style={{ color: 'var(--t3)', fontSize: 9, fontWeight: 500 }}>
+      <p className="mt-1" style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 500 }}>
         Requires analysis — coming soon
       </p>
     </div>
@@ -272,6 +272,10 @@ function PlayerInner() {
             <div className="shrink-0"><FileDropZone /></div>
             <TrackLibrary ref={searchRef} />
           </div>
+        ) : mobileTab === 'queue' ? (
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
+            <InlineQueue />
+          </div>
         ) : (
           <div className="flex-1 min-h-0 flex flex-col overflow-y-auto" style={{ background: 'var(--bg)' }}>
             <NowPlayingStage />
@@ -280,8 +284,8 @@ function PlayerInner() {
           </div>
         )}
 
-        {/* Mini player — library tab only */}
-        {mobileTab === 'library' && (
+        {/* Mini player — library + queue tabs */}
+        {mobileTab !== 'player' && (
           <MiniPlayerStrip onOpenPlayer={() => setMobileTab('player')} />
         )}
       </div>
