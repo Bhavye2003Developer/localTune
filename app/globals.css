@@ -52,11 +52,9 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── Scrollbar ───────────────────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 2px; height: 2px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.3); }
-::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.5); }
+/* ── Scrollbar — hidden globally, scroll still works ─────────────────────── */
+* { scrollbar-width: none; }
+::-webkit-scrollbar { display: none; }
 
 /* ── Mobile bottom sheet slide-up ────────────────────────────────────────── */
 @keyframes slideUp {
