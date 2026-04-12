@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 
-export type TabId = 'EQ' | 'DSP' | 'Info' | 'Marks';
+export type TabId = 'EQ' | 'DSP' | 'Marks';
 
 interface TabDef {
   id: TabId;
@@ -12,7 +12,6 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: 'EQ',    label: 'EQ'    },
   { id: 'DSP',   label: 'DSP'   },
-  { id: 'Info',  label: 'Info'  },
   { id: 'Marks', label: 'Marks' },
 ];
 

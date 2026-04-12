@@ -339,11 +339,15 @@ function attachAudioEvents(dispatch: React.Dispatch<Action>, getState: () => Pla
     const { loopMode, queue } = getState();
     // When loopMode is 'track', or queue-loop with a single track, queuePos and
     // playing don't change in the reducer — the playback useEffect never re-fires.
-    // Restart the audio element directly here before dispatching.
+    // Use setTimeout so the browser fully processes the 'ended' event before we
+    // call play() — required on mobile Chrome/Safari where synchronous play()
+    // inside 'ended' is silently dropped.
     if (loopMode === 'track' || (loopMode === 'queue' && queue.length === 1)) {
-      audio.currentTime = 0;
-      audioCtx?.resume();
-      audio.play().catch(() => {});
+      setTimeout(() => {
+        audio.currentTime = 0;
+        audioCtx?.resume();
+        audio.play().catch(() => {});
+      }, 0);
     }
     dispatch({ type: 'TRACK_ENDED' });
   };

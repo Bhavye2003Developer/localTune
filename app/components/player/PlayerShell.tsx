@@ -23,7 +23,7 @@ function MarksPanel() {
   const { duration, loopA, loopB, loopActive } = state;
 
   return (
-    <div className="flex flex-col gap-3 px-4 pt-3 pb-5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 16px 20px', width: '100%', boxSizing: 'border-box' }}>
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={setLoopA}
@@ -72,7 +72,7 @@ function MarksPanel() {
           </button>
         )}
       </div>
-      <p style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 500, lineHeight: 1.6, whiteSpace: 'normal', overflowWrap: 'break-word' }}>
+      <p style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 500, lineHeight: 1.6, display: 'block', maxWidth: '100%' }}>
         Set A/B markers using the A/B buttons in the player bar or right-click the seek bar.
       </p>
     </div>
@@ -89,13 +89,10 @@ interface PanelStackProps {
   detectedReplayGain: string | null;
   setEQBandGain: (i: number, g: number) => void;
   setEQBypass:   (on: boolean) => void;
-  currentTrack: { title: string } | null;
-  onOpenNowPlaying: () => void;
 }
 
 function PanelStack({
-  openPanels, onToggleEQ, detectedReplayGain,
-  setEQBandGain, setEQBypass, currentTrack, onOpenNowPlaying,
+  openPanels, onToggleEQ, detectedReplayGain, setEQBandGain, setEQBypass,
 }: PanelStackProps) {
   return (
     <div className="flex flex-col">
@@ -112,23 +109,6 @@ function PanelStack({
       {openPanels.has('DSP') && (
         <div style={{ height: 280, overflowY: 'auto', borderBottom: '1px solid var(--br)' }}>
           <DSPPanel onOpenEQ={onToggleEQ} detectedReplayGain={detectedReplayGain} />
-        </div>
-      )}
-      {openPanels.has('Info') && (
-        <div style={{ borderBottom: '1px solid var(--br)' }}>
-          <div className="px-4 py-3">
-            {currentTrack ? (
-              <button
-                onClick={onOpenNowPlaying}
-                className="h-9 px-3 rounded-lg text-[10px] font-bold transition-colors"
-                style={{ color: 'var(--a)', background: '#f59e0b18', border: '1px solid #f59e0b45' }}
-              >
-                Open full info panel →
-              </button>
-            ) : (
-              <p style={{ color: 'var(--t3)', fontSize: 11 }}>No track loaded</p>
-            )}
-          </div>
         </div>
       )}
       {openPanels.has('Marks') && (
@@ -184,8 +164,6 @@ function PlayerInner() {
     detectedReplayGain,
     setEQBandGain,
     setEQBypass,
-    currentTrack,
-    onOpenNowPlaying: handleOpenNowPlaying,
   };
 
   return (
