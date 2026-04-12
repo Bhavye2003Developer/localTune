@@ -62,12 +62,33 @@ export function useAnalysisQueue(
   // Stable reference so processNext can call itself without stale closure
   const processNextRef = useRef<() => void>(() => {});
 
+  const trackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const advanceQueue = useCallback(() => {
+    if (trackTimeoutRef.current) {
+      clearTimeout(trackTimeoutRef.current);
+      trackTimeoutRef.current = null;
+    }
+    processingRef.current = null;
+    setPending(p => Math.max(0, p - 1));
+    processNextRef.current();
+  }, []);
+
   const processNext = useCallback(() => {
     if (processingRef.current !== null) return; // already busy
     const entry = queueRef.current.shift();
     if (!entry) return;
 
     processingRef.current = entry.fileId;
+
+    // 90s safety timeout — if the worker never responds (e.g. WASM crash),
+    // skip this track so the queue doesn't stall forever.
+    trackTimeoutRef.current = setTimeout(() => {
+      if (processingRef.current === entry.fileId) {
+        console.warn('[AnalysisQueue] timeout on', entry.fileId, '— skipping');
+        advanceQueue();
+      }
+    }, 90_000);
 
     (async () => {
       try {
@@ -80,19 +101,19 @@ export function useAnalysisQueue(
           { fileId: entry.fileId, left, right, sampleRate },
           [left.buffer, right.buffer],
         );
-      } catch {
-        // Blob unavailable — skip, continue queue
-        processingRef.current = null;
-        setPending(p => Math.max(0, p - 1));
-        processNextRef.current();
+      } catch (err) {
+        console.warn('[AnalysisQueue] pre-send error for', entry.fileId, err);
+        advanceQueue();
       }
     })();
-  }, []);
+  }, [advanceQueue]);
 
-  // Keep stable ref in sync
+  // Keep stable refs in sync
+  const advanceQueueRef = useRef(advanceQueue);
   useEffect(() => {
     processNextRef.current = processNext;
-  }, [processNext]);
+    advanceQueueRef.current = advanceQueue;
+  }, [processNext, advanceQueue]);
 
   // Create worker once on mount
   useEffect(() => {
@@ -107,7 +128,6 @@ export function useAnalysisQueue(
       e: MessageEvent<{ fileId: string; result?: AnalysisResult; error?: string }>,
     ) => {
       const { fileId, result, error } = e.data;
-      processingRef.current = null;
 
       if (result && !error) {
         // Persist to Dexie
@@ -128,18 +148,23 @@ export function useAnalysisQueue(
           // Non-fatal — data still dispatched to in-memory state
         }
 
-        // Find the in-memory Track whose id matches fileId
-        const trackId = fileId;
-        dispatch({ type: 'UPDATE_TRACK_ANALYSIS', id: trackId, analysis: result });
+        dispatch({ type: 'UPDATE_TRACK_ANALYSIS', id: fileId, analysis: result });
+      } else if (error) {
+        console.warn('[AnalysisQueue] worker error for', fileId, error);
       }
 
-      setPending(p => Math.max(0, p - 1));
-      processNextRef.current();
+      advanceQueueRef.current();
+    };
+
+    worker.onerror = (e) => {
+      console.error('[AnalysisQueue] worker crash:', e.message);
+      advanceQueueRef.current();
     };
 
     workerRef.current = worker;
 
     return () => {
+      if (trackTimeoutRef.current) clearTimeout(trackTimeoutRef.current);
       worker.terminate();
       workerRef.current = null;
     };

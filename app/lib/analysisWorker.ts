@@ -91,9 +91,13 @@ if (typeof self !== 'undefined' && typeof window === 'undefined') {
 
   async function getEssentia(): Promise<EssentiaInstance> {
     if (essentiaInstance) return essentiaInstance;
-    // Lazy WASM import — never runs on the main thread
+    // Lazy WASM import — never runs on the main thread.
+    // locateFile redirects the WASM binary to /public/essentia/ so Turbopack
+    // doesn't need to bundle the binary — it's served as a static asset.
     const { EssentiaWASM, Essentia } = await import('essentia.js');
-    const wasmModule = await EssentiaWASM();
+    const wasmModule = await EssentiaWASM({
+      locateFile: (filename: string) => '/essentia/' + filename,
+    });
     essentiaInstance = new Essentia(wasmModule) as unknown as EssentiaInstance;
     return essentiaInstance;
   }
@@ -107,10 +111,9 @@ if (typeof self !== 'undefined' && typeof window === 'undefined') {
       const result = await analyseBuffer(left, right, sampleRate, essentia);
       (self as unknown as Worker).postMessage({ fileId, result });
     } catch (err) {
-      (self as unknown as Worker).postMessage({
-        fileId,
-        error: err instanceof Error ? err.message : String(err),
-      });
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[AnalysisWorker] failed for', fileId, msg);
+      (self as unknown as Worker).postMessage({ fileId, error: msg });
     }
   };
 }

@@ -1,5 +1,5 @@
 declare module 'essentia.js' {
-  const EssentiaWASM: () => Promise<unknown>;
+  const EssentiaWASM: (options?: { locateFile?: (filename: string) => string }) => Promise<unknown>;
   class Essentia {
     constructor(wasmModule: unknown, isDebug?: boolean);
     arrayToVector(arr: Float32Array): unknown;
