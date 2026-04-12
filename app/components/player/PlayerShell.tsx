@@ -52,59 +52,59 @@ function PlayerInner() {
   );
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col nx-dot-grid" style={{ background: 'var(--nx-bg-deep)' }}>
-      {/* ── Main area (grows to fill space above bottom bar) ── */}
+    <div
+      className="relative w-screen h-screen overflow-hidden flex flex-col"
+      style={{ background: 'var(--bg)' }}
+    >
+      {/* ── Main area ── */}
       <div className="flex-1 relative min-h-0">
 
-        {/* ── Now Playing Stage (center fill) ── */}
+        {/* Now Playing Stage (center fill, behind panels) */}
         <NowPlayingStage libOpen={showLib} queueOpen={queueOpen} />
 
-        {/* ── Library panel
-             Mobile: full-screen overlay over the visualizer
-             Desktop sm+: left panel 288px wide                                  ── */}
+        {/* Library sidebar
+            Mobile: full-screen overlay
+            Desktop: 240px fixed left panel */}
         {showLib && (
-          <div className="
-            absolute left-0 top-0 bottom-0 z-20
-            flex flex-col select-none nx-scanline-overlay
-            border-r w-full sm:w-72
-          " style={{ background: 'var(--nx-bg-panel)', borderColor: 'var(--nx-border)' }}>
-            <div className="px-3 pt-3 pb-1 flex items-center justify-between">
-              <span className="font-mono uppercase tracking-widest text-[9px]" style={{ color: 'var(--nx-cyan-dim)' }}>
-                ◈ INTEL DATABASE
-              </span>
+          <div
+            className="absolute left-0 top-0 bottom-0 z-20 flex flex-col select-none w-full sm:w-60"
+            style={{ background: 'var(--s1)', borderRight: '1px solid var(--br)' }}
+          >
+            {/* Sidebar header */}
+            <div className="px-4 pt-4 pb-2 flex items-center justify-between shrink-0">
+              <span style={{ color: 'var(--t1)', fontSize: 14, fontWeight: 800 }}>Library</span>
             </div>
             <FileDropZone />
             <TrackLibrary ref={searchRef} />
           </div>
         )}
 
-        {/* ── Queue sidebar
-             Mobile: full-screen overlay
-             Desktop: right panel 288px                                           ── */}
+        {/* Queue sidebar */}
         {queueOpen && <QueueSidebar onClose={handleCloseQueue} />}
 
-        {/* ── Now Playing panel ── */}
+        {/* Now Playing panel */}
         {nowPlayingOpen && currentTrack && (
           <NowPlayingPanel track={currentTrack} onClose={handleCloseNowPlaying} />
         )}
 
-        {/* ── Keyboard shortcuts overlay ── */}
+        {/* Keyboard shortcuts overlay */}
         {shortcutsOpen && (
           <KeyboardShortcutsOverlay onClose={handleCloseShortcuts} />
         )}
       </div>
 
-      {/* ── Bottom stack: EQ drawer (mobile only) + PlayerBar ──────────────── */}
+      {/* ── Bottom stack: EQ drawer (mobile) + PlayerBar ── */}
       <div className="shrink-0 flex flex-col">
-        {/* EQ drawer — mobile only; desktop EQ lives permanently in NowPlayingStage */}
+        {/* EQ drawer — mobile only */}
         <div
-          className={`
-            sm:hidden
-            bg-black/85 backdrop-blur-xl border-t border-white/8
-            overflow-hidden transition-all duration-200 ease-in-out
-            ${eqOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-          `}
-          style={{ height: eqOpen ? undefined : 0, maxHeight: eqOpen ? 210 : 0 }}
+          className="sm:hidden overflow-hidden transition-all duration-200 ease-in-out"
+          style={{
+            background: 'var(--s1)',
+            borderTop: eqOpen ? '1px solid var(--br)' : 'none',
+            height: eqOpen ? 210 : 0,
+            opacity: eqOpen ? 1 : 0,
+            pointerEvents: eqOpen ? 'auto' : 'none',
+          }}
         >
           <div style={{ height: 210 }}>
             <EQPanel
@@ -118,8 +118,13 @@ function PlayerInner() {
 
         {/* DSP drawer */}
         <div
-          className="bg-black/85 backdrop-blur-xl border-t border-white/8 overflow-hidden transition-all duration-200 ease-in-out"
-          style={{ height: dspOpen ? 280 : 0, maxHeight: dspOpen ? 280 : 0 }}
+          className="overflow-hidden transition-all duration-200 ease-in-out"
+          style={{
+            background: 'var(--s1)',
+            borderTop: dspOpen ? '1px solid var(--br)' : 'none',
+            height: dspOpen ? 280 : 0,
+            maxHeight: dspOpen ? 280 : 0,
+          }}
         >
           <DSPPanel
             open={dspOpen}

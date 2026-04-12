@@ -38,7 +38,7 @@ describe('EQPanel', () => {
 
   it('renders "EQ" heading when open', () => {
     render(<EQPanel {...defaultProps} />);
-    expect(screen.getByText('◈ SIGNAL PROCESSOR')).toBeInTheDocument();
+    expect(screen.getByText('EQ')).toBeInTheDocument();
   });
 
   it('renders EQCurve', () => {

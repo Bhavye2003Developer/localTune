@@ -29,11 +29,10 @@ function LoopIcon({ mode }: { mode: LoopMode }) {
   return <Repeat size={14} />;
 }
 
-function NxBtn({ onClick, title, active, activeRed, children, disabled }: {
+function ABtn({ onClick, title, active, children, disabled }: {
   onClick: () => void;
   title: string;
   active?: boolean;
-  activeRed?: boolean;
   children: React.ReactNode;
   disabled?: boolean;
 }) {
@@ -42,14 +41,11 @@ function NxBtn({ onClick, title, active, activeRed, children, disabled }: {
       onClick={onClick}
       title={title}
       disabled={disabled}
-      className="flex items-center justify-center w-11 h-11 transition-colors shrink-0 disabled:opacity-20"
+      className="flex items-center justify-center w-11 h-11 rounded-lg transition-colors shrink-0 disabled:opacity-20"
       style={{
-        color: active
-          ? (activeRed ? 'var(--nx-red)' : 'var(--nx-cyan)')
-          : 'var(--nx-text-dim)',
-        background: active
-          ? (activeRed ? 'rgba(255,0,60,0.08)' : 'rgba(0,212,255,0.06)')
-          : 'transparent',
+        color: active ? 'var(--a)' : 'var(--t2)',
+        background: active ? '#f59e0b18' : 'transparent',
+        border: active ? '1px solid #f59e0b45' : '1px solid transparent',
       }}
     >
       {children}
@@ -83,27 +79,12 @@ export const PlayerBar = memo(function PlayerBar({
   const fillRef     = useRef<HTMLDivElement>(null);
   const thumbRef    = useRef<HTMLDivElement>(null);
   const timeRef     = useRef<HTMLSpanElement>(null);
-  const sysIdRef    = useRef<HTMLSpanElement>(null);
   const draggingRef = useRef(false);
   const volRef      = useRef<HTMLDivElement>(null);
   const volDragging = useRef(false);
-  const prevTrackId = useRef<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; pct: number }>({
     visible: false, x: 0, pct: 0,
   });
-
-  // Flicker SYS-ID on track change
-  useEffect(() => {
-    if (currentId && currentId !== prevTrackId.current) {
-      prevTrackId.current = currentId;
-      const el = sysIdRef.current;
-      if (el) {
-        el.classList.remove('animate-nx-flicker');
-        void el.offsetWidth;
-        el.classList.add('animate-nx-flicker');
-      }
-    }
-  }, [currentId]);
 
   // Close context menu on outside click
   useEffect(() => {
@@ -206,9 +187,9 @@ export const PlayerBar = memo(function PlayerBar({
   }, [speed, setSpeed]);
 
   return (
-    <div className="pb-safe" style={{ background: 'var(--nx-bg-panel)', borderTop: '1px solid var(--nx-cyan)' }}>
+    <div className="pb-safe" style={{ background: 'var(--s1)', borderTop: '1px solid var(--br)' }}>
 
-      {/* ── Progress bar ── */}
+      {/* ── Seek bar ── */}
       <div
         ref={progressRef}
         tabIndex={0}
@@ -219,67 +200,58 @@ export const PlayerBar = memo(function PlayerBar({
         onContextMenu={onContextMenu}
         onKeyDown={onSeekBarKeyDown}
       >
-        <div className="relative h-[3px] group-hover:h-[4px] transition-all" style={{ background: 'rgba(0,212,255,0.1)' }}>
-
-          {/* Tick marks at 10% intervals */}
-          {[10,20,30,40,50,60,70,80,90].map(p => (
-            <div
-              key={p}
-              className="absolute top-1/2 -translate-y-1/2 w-px"
-              style={{ left: `${p}%`, height: 6, background: 'rgba(0,212,255,0.18)' }}
-            />
-          ))}
+        <div className="relative h-[3px] group-hover:h-[4px] transition-all" style={{ background: 'var(--s5)' }}>
 
           {/* A-B region */}
           {loopAPct !== null && loopBPct !== null && (
             <div
               className="absolute top-0 h-full"
-              style={{ left: `${loopAPct}%`, width: `${loopBPct - loopAPct}%`, background: 'rgba(0,212,255,0.2)' }}
+              style={{ left: `${loopAPct}%`, width: `${loopBPct - loopAPct}%`, background: 'rgba(245,158,11,0.2)' }}
             />
           )}
 
           {/* Fill */}
-          <div ref={fillRef} className="absolute top-0 left-0 h-full" style={{ width: `${pct}%`, background: 'var(--nx-cyan)' }} />
+          <div ref={fillRef} className="absolute top-0 left-0 h-full" style={{ width: `${pct}%`, background: 'var(--a)' }} />
 
           {/* Loop markers */}
           {loopAPct !== null && (
-            <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopAPct}%`, background: 'var(--nx-cyan)' }} />
+            <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopAPct}%`, background: 'var(--a)' }} />
           )}
           {loopBPct !== null && (
-            <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopBPct}%`, background: 'var(--nx-cyan)' }} />
+            <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopBPct}%`, background: 'var(--a)' }} />
           )}
 
-          {/* Diamond thumb */}
+          {/* Round thumb */}
           <div
             ref={thumbRef}
-            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rotate-45 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ left: `calc(${pct}% - 5px)`, background: 'var(--nx-red)' }}
+            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ left: `calc(${pct}% - 5px)`, background: 'var(--a)' }}
           />
         </div>
 
         {/* Context menu */}
         {contextMenu.visible && (
           <div
-            className="absolute z-50 py-1 shadow-xl"
+            className="absolute z-50 py-1 shadow-xl rounded-lg overflow-hidden"
             style={{
               left: `clamp(0px, ${contextMenu.x}%, calc(100% - 160px))`,
               bottom: '100%',
               marginBottom: 4,
-              background: 'var(--nx-bg-panel)',
-              border: '1px solid var(--nx-border-active)',
+              background: 'var(--s2)',
+              border: '1px solid var(--br)',
             }}
           >
             {[
-              { label: 'SET LOOP START (A)', point: 'a' as const },
-              { label: 'SET LOOP END (B)',   point: 'b' as const },
+              { label: 'Set loop start (A)', point: 'a' as const },
+              { label: 'Set loop end (B)',   point: 'b' as const },
             ].map(({ label, point }) => (
               <button
                 key={point}
-                className="block w-full px-4 py-2 font-mono text-[9px] uppercase tracking-widest text-left transition-colors whitespace-nowrap"
-                style={{ color: 'var(--nx-text-dim)' }}
+                className="block w-full px-4 py-2 text-[11px] font-medium text-left transition-colors whitespace-nowrap"
+                style={{ color: 'var(--t2)' }}
                 onPointerDown={e => { e.stopPropagation(); onSetLoopPoint(point); }}
-                onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-cyan)'; }}
-                onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
+                onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--a)'; (e.target as HTMLElement).style.background = 'var(--s3)'; }}
+                onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--t2)'; (e.target as HTMLElement).style.background = ''; }}
               >
                 {label}
               </button>
@@ -294,37 +266,38 @@ export const PlayerBar = memo(function PlayerBar({
         {/* Left — track info + transport */}
         <div className="flex items-center gap-1 px-2 sm:px-0 sm:gap-1.5 sm:flex-none">
 
-          <NxBtn onClick={onToggleLib} title="Library" active={libOpen}>
+          <ABtn onClick={onToggleLib} title="Library" active={libOpen}>
             <Library size={16} />
-          </NxBtn>
+          </ABtn>
 
-          {/* Album art + info */}
+          {/* Album art + track info */}
           <button
             onClick={track ? onOpenNowPlaying : undefined}
             disabled={!track}
             className="flex items-center gap-2 min-w-0 flex-1 sm:flex-none sm:w-44 text-left disabled:cursor-default"
           >
             <div
-              className="w-9 h-9 shrink-0 flex items-center justify-center overflow-hidden"
-              style={{ border: '1px solid rgba(0,212,255,0.2)', background: 'var(--nx-bg-raised)' }}
+              className="w-10 h-10 shrink-0 flex items-center justify-center overflow-hidden rounded-md"
+              style={{ border: '1px solid var(--br)', background: 'var(--s2)' }}
             >
               {track?.coverUrl
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={track.coverUrl} alt="cover" className="w-full h-full object-cover" />
-                : <Music size={12} style={{ color: 'var(--nx-cyan-dim)' }} />
+                : <Music size={14} style={{ color: 'var(--t3)' }} />
               }
             </div>
             <div className="flex-1 min-w-0">
               {track ? (
                 <>
-                  <span ref={sysIdRef} className="block font-mono uppercase tracking-widest text-[8px]" style={{ color: 'var(--nx-cyan-dim)' }}>
-                    SYS-ID
-                  </span>
-                  <p className="text-[12px] truncate leading-tight" style={{ color: 'var(--nx-text)' }}>{track.title}</p>
-                  <p className="font-mono text-[9px] truncate" style={{ color: 'var(--nx-text-dim)' }}>{track.artist || track.name}</p>
+                  <p className="truncate leading-tight" style={{ color: 'var(--t1)', fontSize: 11.5, fontWeight: 600 }}>
+                    {track.title}
+                  </p>
+                  <p className="truncate" style={{ color: 'var(--t2)', fontSize: 9.5, fontWeight: 500 }}>
+                    {track.artist || track.name}
+                  </p>
                 </>
               ) : (
-                <p className="font-mono text-[10px]" style={{ color: 'var(--nx-text-dim)' }}>NO TRACK LOADED</p>
+                <p style={{ color: 'var(--t3)', fontSize: 11, fontWeight: 500 }}>No track</p>
               )}
             </div>
           </button>
@@ -332,34 +305,34 @@ export const PlayerBar = memo(function PlayerBar({
           {/* Transport */}
           <div className="flex items-center gap-0 ml-auto sm:ml-0">
             <button onClick={prev} disabled={!track}
-              className="flex items-center justify-center w-11 h-11 transition-colors disabled:opacity-20"
-              style={{ color: 'var(--nx-text-dim)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--nx-cyan)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
+              className="flex items-center justify-center w-11 h-11 rounded-lg transition-colors disabled:opacity-20"
+              style={{ color: 'var(--t2)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--a)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--t2)'; }}
             >
               <SkipBack size={16} />
             </button>
 
-            {/* Play button — clip-path diagonal */}
+            {/* Play button — amber glow */}
             <button
               onClick={togglePlay}
               disabled={!track}
-              className="flex items-center justify-center w-10 h-10 mx-1 transition-all disabled:opacity-20 animate-nx-glow-pulse"
+              className="flex items-center justify-center w-10 h-10 mx-1 rounded-full transition-all disabled:opacity-20"
               style={{
-                background: playing ? 'var(--nx-cyan)' : 'transparent',
-                border: '1px solid rgba(0,212,255,0.5)',
-                color: playing ? 'var(--nx-bg-deep)' : 'var(--nx-cyan)',
-                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)',
+                background: playing ? 'var(--a)' : 'transparent',
+                border: '1px solid #f59e0b45',
+                color: playing ? '#000' : 'var(--a)',
+                boxShadow: '0 0 12px #F59E0B55',
               }}
             >
               {playing ? <Pause size={16} /> : <Play size={16} className="translate-x-0.5" />}
             </button>
 
             <button onClick={next} disabled={!track}
-              className="flex items-center justify-center w-11 h-11 transition-colors disabled:opacity-20"
-              style={{ color: 'var(--nx-text-dim)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--nx-cyan)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
+              className="flex items-center justify-center w-11 h-11 rounded-lg transition-colors disabled:opacity-20"
+              style={{ color: 'var(--t2)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--a)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--t2)'; }}
             >
               <SkipForward size={16} />
             </button>
@@ -370,18 +343,18 @@ export const PlayerBar = memo(function PlayerBar({
         <div className="flex items-center gap-0 px-1 sm:px-0 sm:ml-auto overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
 
           {/* Time */}
-          <span ref={timeRef} className="font-mono tabular-nums text-[10px] shrink-0 px-1.5"
-            style={{ color: 'var(--nx-cyan)' }}>
+          <span ref={timeRef} className="tabular-nums text-[10px] shrink-0 px-1.5"
+            style={{ color: 'var(--t2)', fontWeight: 400 }}>
             {formatTime(position)}&nbsp;/&nbsp;{formatTime(duration)}
           </span>
 
           {/* Volume */}
           <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}
             className="flex items-center justify-center w-10 h-10 transition-colors shrink-0"
-            style={{ color: 'var(--nx-text-dim)' }}>
+            style={{ color: 'var(--t2)' }}>
             {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
           </button>
-          {/* Custom volume scrubber */}
+          {/* Volume scrubber */}
           <div
             ref={volRef}
             className="relative w-14 sm:w-16 h-10 flex items-center cursor-pointer shrink-0 group"
@@ -389,76 +362,92 @@ export const PlayerBar = memo(function PlayerBar({
             onPointerMove={onVolPointerMove}
             onPointerUp={onVolPointerUp}
           >
-            <div className="relative w-full h-[3px]" style={{ background: 'rgba(0,212,255,0.15)' }}>
+            <div className="relative w-full h-[3px] rounded-full" style={{ background: 'var(--s5)' }}>
               <div
-                className="absolute top-0 left-0 h-full"
-                style={{ width: `${(muted ? 0 : volume) * 100}%`, background: 'var(--nx-cyan)' }}
+                className="absolute top-0 left-0 h-full rounded-full"
+                style={{ width: `${(muted ? 0 : volume) * 100}%`, background: 'var(--a)' }}
               />
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ left: `calc(${(muted ? 0 : volume) * 100}% - 4px)`, background: 'var(--nx-cyan)' }}
+                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ left: `calc(${(muted ? 0 : volume) * 100}% - 4px)`, background: 'var(--a)' }}
               />
             </div>
           </div>
 
-          <NxBtn onClick={cycleShuffle} title={shuffleMode === 'off' ? 'Shuffle off' : 'Shuffle on'} active={shuffleMode !== 'off'}>
+          <ABtn onClick={cycleShuffle} title={shuffleMode === 'off' ? 'Shuffle off' : 'Shuffle on'} active={shuffleMode !== 'off'}>
             <Shuffle size={13} />
-          </NxBtn>
+          </ABtn>
 
-          <NxBtn onClick={cycleLoopMode}
+          <ABtn onClick={cycleLoopMode}
             title={loopMode === 'off' ? 'Loop off' : loopMode === 'track' ? 'Loop track' : 'Loop queue'}
             active={loopMode !== 'off'}>
             <LoopIcon mode={loopMode} />
-          </NxBtn>
+          </ABtn>
 
           {/* Speed */}
           <button onClick={nextSpeed} title={`Speed: ${speed}×`}
-            className="flex items-center justify-center h-10 px-2 font-mono text-[10px] transition-colors min-w-10 shrink-0"
-            style={{ color: speed !== 1 ? 'var(--nx-cyan)' : 'var(--nx-text-dim)' }}>
+            className="flex items-center justify-center h-10 px-2 text-[10px] transition-colors min-w-10 shrink-0 rounded-lg"
+            style={{
+              color: speed !== 1 ? 'var(--a)' : 'var(--t2)',
+              background: speed !== 1 ? '#f59e0b18' : 'transparent',
+              border: speed !== 1 ? '1px solid #f59e0b45' : '1px solid transparent',
+              fontWeight: 700,
+            }}>
             {speed}×
           </button>
 
-          <NxBtn onClick={onToggleQueue} title="Queue" active={queueOpen}>
+          <ABtn onClick={onToggleQueue} title="Queue" active={queueOpen}>
             <ListMusic size={13} />
-          </NxBtn>
+          </ABtn>
 
-          <NxBtn onClick={onToggleEQ} title="EQ (E)" active={eqOpen} activeRed>
+          <ABtn onClick={onToggleEQ} title="EQ (E)" active={eqOpen}>
             <SlidersHorizontal size={13} />
-          </NxBtn>
+          </ABtn>
 
           <NxBtn onClick={onToggleDSP} title="DSP chain (D)" active={dspOpen}>
             <span className="font-mono text-[10px] font-bold">DSP</span>
           </NxBtn>
 
           <button onClick={onOpenShortcuts} title="Keyboard shortcuts (?)"
-            className="hidden sm:flex items-center justify-center w-10 h-10 font-mono text-[10px] transition-colors shrink-0"
-            style={{ color: 'var(--nx-text-dim)' }}>
+            className="hidden sm:flex items-center justify-center w-10 h-10 text-[10px] transition-colors shrink-0"
+            style={{ color: 'var(--t2)', fontWeight: 700 }}>
             ?
           </button>
 
           {/* A-B loop */}
-          <div className="flex items-center gap-0 pl-1 ml-1 shrink-0" style={{ borderLeft: '1px solid var(--nx-border)' }}>
+          <div className="flex items-center gap-0 pl-1 ml-1 shrink-0" style={{ borderLeft: '1px solid var(--br)' }}>
             <button onClick={setLoopA} disabled={!track} title="Set loop start (A)"
-              className="flex items-center justify-center h-10 px-2 font-mono text-[10px] font-bold transition-colors disabled:opacity-20"
-              style={{ color: loopA !== null ? 'var(--nx-cyan)' : 'var(--nx-text-dim)', background: loopA !== null ? 'rgba(0,212,255,0.08)' : '' }}>
+              className="flex items-center justify-center h-10 px-2 text-[10px] font-bold transition-colors disabled:opacity-20 rounded"
+              style={{
+                color: loopA !== null ? 'var(--a)' : 'var(--t2)',
+                background: loopA !== null ? '#f59e0b18' : 'transparent',
+                border: loopA !== null ? '1px solid #f59e0b45' : '1px solid transparent',
+              }}>
               A{loopA !== null ? ` ${formatTime(loopA)}` : ''}
             </button>
             <button onClick={setLoopB} disabled={!track} title="Set loop end (B)"
-              className="flex items-center justify-center h-10 px-2 font-mono text-[10px] font-bold transition-colors disabled:opacity-20"
-              style={{ color: loopB !== null ? 'var(--nx-cyan)' : 'var(--nx-text-dim)', background: loopB !== null ? 'rgba(0,212,255,0.08)' : '' }}>
+              className="flex items-center justify-center h-10 px-2 text-[10px] font-bold transition-colors disabled:opacity-20 rounded"
+              style={{
+                color: loopB !== null ? 'var(--a)' : 'var(--t2)',
+                background: loopB !== null ? '#f59e0b18' : 'transparent',
+                border: loopB !== null ? '1px solid #f59e0b45' : '1px solid transparent',
+              }}>
               B{loopB !== null ? ` ${formatTime(loopB)}` : ''}
             </button>
             {loopA !== null && loopB !== null && (
               <button onClick={toggleLoop} title={loopActive ? 'Disable A-B loop' : 'Enable A-B loop'}
-                className="flex items-center justify-center w-10 h-10 transition-colors"
-                style={{ color: loopActive ? 'var(--nx-cyan)' : 'var(--nx-text-dim)', background: loopActive ? 'rgba(0,212,255,0.08)' : '' }}>
+                className="flex items-center justify-center w-10 h-10 transition-colors rounded"
+                style={{
+                  color: loopActive ? 'var(--a)' : 'var(--t2)',
+                  background: loopActive ? '#f59e0b18' : 'transparent',
+                }}>
                 <RotateCcw size={12} />
               </button>
             )}
             {(loopA !== null || loopB !== null) && (
               <button onClick={clearLoop} title="Clear loop points"
-                className="flex items-center justify-center w-8 h-10 font-mono text-[9px] transition-colors"
-                style={{ color: 'var(--nx-text-dim)' }}>
+                className="flex items-center justify-center w-8 h-10 text-[9px] transition-colors"
+                style={{ color: 'var(--t2)' }}>
                 ✕
               </button>
             )}

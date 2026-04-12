@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Play, X } from 'lucide-react';
+import { Play, X, Search } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
 
 export interface TrackLibraryHandle {
@@ -69,29 +69,34 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
   return (
     <div className="flex-1 min-h-0 flex flex-col">
 
-      {/* ── Search ── */}
-      <div className="px-3 py-2 relative">
-        <div className="flex items-center border-b" style={{ borderColor: 'rgba(0,212,255,0.2)' }}>
-          <span className="font-mono text-[10px] shrink-0 pr-1.5" style={{ color: 'var(--nx-cyan-dim)' }}>
-            QUERY ›
-          </span>
+      {/* Search */}
+      <div className="px-3 py-2">
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md"
+          style={{ background: 'var(--s2)', border: '1px solid var(--br)' }}
+        >
+          <Search size={11} style={{ color: 'var(--t3)', flexShrink: 0 }} />
           <input
             ref={searchRef}
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="search tracks..."
-            className="flex-1 bg-transparent text-[11px] py-1 focus:outline-none font-mono"
+            placeholder="Search tracks..."
+            className="flex-1 bg-transparent focus:outline-none"
             style={{
-              color: 'var(--nx-text)',
-              caretColor: 'var(--nx-cyan)',
+              color: 'var(--t1)',
+              fontSize: 11,
+              fontWeight: 500,
+              caretColor: 'var(--a)',
             }}
           />
           {query && (
             <button
               onClick={() => setQuery('')}
               className="shrink-0 transition-colors"
-              style={{ color: 'var(--nx-text-dim)' }}
+              style={{ color: 'var(--t3)' }}
+              onMouseEnter={e => { (e.currentTarget).style.color = 'var(--t2)'; }}
+              onMouseLeave={e => { (e.currentTarget).style.color = 'var(--t3)'; }}
             >
               <X size={10} />
             </button>
@@ -99,25 +104,19 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
         </div>
       </div>
 
-      {/* ── Count line ── */}
-      <div className="px-3 pb-1 flex items-center justify-between">
-        <span className="font-mono uppercase tracking-widest text-[9px]" style={{ color: 'var(--nx-cyan-dim)' }}>
-          {query ? `${filtered.length} RESULTS` : `${tracks.length} FILES LOADED`}
+      {/* Count */}
+      <div className="px-3 pb-1">
+        <span style={{ color: 'var(--t3)', fontSize: 9, fontWeight: 500 }}>
+          {query ? `${filtered.length} of ${tracks.length} tracks` : `${tracks.length} tracks`}
         </span>
-        {query && (
-          <span className="font-mono text-[9px]" style={{ color: 'var(--nx-text-dim)' }}>
-            {filtered.length}/{tracks.length}
-          </span>
-        )}
       </div>
 
-      {/* ── Track list ── */}
+      {/* Track list */}
       <div ref={parentRef} className="flex-1 overflow-y-auto">
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map(vItem => {
             const track = filtered[vItem.index];
             const isCurrent = track.id === currentId;
-            const idx = String(vItem.index + 1).padStart(3, '0');
 
             return (
               <div
@@ -128,10 +127,8 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   transform: `translateY(${vItem.start}px)`,
                   width: '100%',
                   height: vItem.size,
-                  borderLeft: isCurrent
-                    ? '2px solid var(--nx-cyan)'
-                    : '2px solid transparent',
-                  background: isCurrent ? 'var(--nx-bg-raised)' : undefined,
+                  borderLeft: isCurrent ? '2px solid var(--a)' : '2px solid transparent',
+                  background: isCurrent ? '#f59e0b08' : undefined,
                 }}
                 onClick={() => playNow(track.id)}
                 onPointerDown={(e) => {
@@ -151,39 +148,16 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   cancelLongPress();
                   openMenu(e.clientX, e.clientY, track.id);
                 }}
-                className="flex items-center gap-2 px-2 cursor-pointer transition-colors group"
+                className="flex items-center gap-2 px-3 cursor-pointer transition-colors"
                 onMouseEnter={e => {
-                  if (!isCurrent) {
-                    (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'var(--nx-red)';
-                    (e.currentTarget as HTMLDivElement).style.background = '#06101a';
-                  }
+                  if (!isCurrent) (e.currentTarget as HTMLDivElement).style.background = 'var(--s3)';
                 }}
                 onMouseLeave={e => {
-                  if (!isCurrent) {
-                    (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'transparent';
-                    (e.currentTarget as HTMLDivElement).style.background = '';
-                  }
+                  if (!isCurrent) (e.currentTarget as HTMLDivElement).style.background = '';
                 }}
               >
-                {/* Index */}
-                <span className="font-mono text-[9px] shrink-0 w-7 text-right" style={{ color: 'var(--nx-cyan-dim)' }}>
-                  T-{idx}
-                </span>
-
-                {/* Status dot */}
-                <span
-                  className={isCurrent && playing ? 'animate-nx-blink' : ''}
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: '50%',
-                    background: track.error ? 'var(--nx-red)' : isCurrent ? 'var(--nx-cyan)' : 'var(--nx-cyan-dim)',
-                    flexShrink: 0,
-                  }}
-                />
-
                 {/* Playing indicator */}
-                <div className="w-5 shrink-0 flex items-center justify-center">
+                <div className="w-4 shrink-0 flex items-center justify-center">
                   {isCurrent && playing ? (
                     <span className="flex gap-px items-end h-3.5">
                       {[1, 2, 3].map(i => (
@@ -193,36 +167,42 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                           style={{
                             height: `${50 + i * 15}%`,
                             animationDelay: `${i * 100}ms`,
-                            background: 'var(--nx-cyan)',
+                            background: 'var(--green)',
                           }}
                         />
                       ))}
                     </span>
                   ) : isCurrent ? (
-                    <Play size={10} style={{ color: 'var(--nx-cyan)', fill: 'var(--nx-cyan)' }} />
+                    <Play size={9} style={{ color: 'var(--a)', fill: 'var(--a)' }} />
                   ) : null}
                 </div>
 
                 {/* Title + artist */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] truncate leading-tight" style={{ color: isCurrent ? 'var(--nx-cyan)' : 'var(--nx-text)' }}>
+                  <p
+                    className="truncate leading-tight"
+                    style={{ color: isCurrent ? 'var(--a)' : 'var(--t1)', fontSize: 11.5, fontWeight: 600 }}
+                  >
                     {track.title}
                   </p>
-                  <p className="font-mono text-[9px] truncate" style={{ color: 'var(--nx-text-dim)' }}>
+                  <p className="truncate" style={{ color: 'var(--t2)', fontSize: 9.5, fontWeight: 500 }}>
                     {track.artist || track.name}
                   </p>
                 </div>
 
                 {/* Duration */}
                 {track.duration > 0 && (
-                  <span className="font-mono text-[10px] shrink-0" style={{ color: 'var(--nx-cyan-dim)' }}>
+                  <span className="shrink-0" style={{ color: 'var(--t2)', fontSize: 9, fontWeight: 400 }}>
                     {formatTime(track.duration)}
                   </span>
                 )}
 
                 {/* Error badge */}
                 {track.error && (
-                  <span className="font-mono text-[9px] px-1 shrink-0" style={{ color: 'var(--nx-red)', border: '1px solid var(--nx-red)', opacity: 0.8 }}>
+                  <span
+                    className="px-1 rounded shrink-0"
+                    style={{ color: 'var(--orange)', border: '1px solid var(--orange)', fontSize: 9, fontWeight: 700, opacity: 0.8 }}
+                  >
                     ERR
                   </span>
                 )}
@@ -232,29 +212,29 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
         </div>
       </div>
 
-      {/* ── Context menu ── */}
+      {/* Context menu */}
       {menu.visible && (
         <div
-          className="fixed z-50 py-1 shadow-xl"
+          className="fixed z-50 py-1 shadow-xl rounded-lg overflow-hidden"
           style={{
             left: menu.x,
             top: menu.y,
-            background: 'var(--nx-bg-panel)',
-            border: '1px solid var(--nx-border-active)',
+            background: 'var(--s2)',
+            border: '1px solid var(--br)',
           }}
         >
           {[
-            { label: 'PLAY NOW',     action: () => { playNow(menu.trackId);    closeMenu(); } },
-            { label: 'PLAY NEXT',    action: () => { playNext(menu.trackId);   closeMenu(); } },
-            { label: 'ADD TO QUEUE', action: () => { addToQueue(menu.trackId); closeMenu(); } },
+            { label: 'Play now',     action: () => { playNow(menu.trackId);    closeMenu(); } },
+            { label: 'Play next',    action: () => { playNext(menu.trackId);   closeMenu(); } },
+            { label: 'Add to queue', action: () => { addToQueue(menu.trackId); closeMenu(); } },
           ].map(({ label, action }) => (
             <button
               key={label}
-              className="block w-full px-4 py-2.5 text-left font-mono text-[10px] uppercase tracking-widest transition-colors whitespace-nowrap touch-manipulation"
-              style={{ color: 'var(--nx-text-dim)' }}
+              className="block w-full px-4 py-2.5 text-left transition-colors whitespace-nowrap touch-manipulation"
+              style={{ color: 'var(--t2)', fontSize: 11, fontWeight: 600 }}
               onPointerDown={e => { e.stopPropagation(); action(); }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-cyan)'; (e.target as HTMLElement).style.background = 'var(--nx-bg-raised)'; }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; (e.target as HTMLElement).style.background = ''; }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--t1)'; (e.target as HTMLElement).style.background = 'var(--s3)'; }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--t2)'; (e.target as HTMLElement).style.background = ''; }}
             >
               {label}
             </button>
