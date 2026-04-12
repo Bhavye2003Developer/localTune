@@ -10,7 +10,7 @@ export interface TrackLibraryHandle {
 }
 
 export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary(_, ref) {
-  const { state, playNow, playNext, addToQueue, removeTrack } = usePlayer();
+  const { state, playNow, playNext, addToQueue, removeTrack, analysisProgress } = usePlayer();
   const { tracks, queue, queuePos, playing } = state;
   const currentId = queue[queuePos] ?? null;
   const parentRef = useRef<HTMLDivElement>(null);
@@ -104,11 +104,16 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
         </div>
       </div>
 
-      {/* Count */}
-      <div className="px-3 pb-1">
+      {/* Count + analysis progress */}
+      <div className="px-3 pb-1 flex items-center gap-2">
         <span style={{ color: 'var(--t3)', fontSize: 9, fontWeight: 500 }}>
           {query ? `${filtered.length} of ${tracks.length} tracks` : `${tracks.length} tracks`}
         </span>
+        {analysisProgress.pending > 0 && (
+          <span style={{ color: '#F59E0B', fontSize: 9, fontWeight: 600 }}>
+            · Analysing {analysisProgress.total - analysisProgress.pending + 1}/{analysisProgress.total}
+          </span>
+        )}
       </div>
 
       {/* Track list */}
