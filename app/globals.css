@@ -44,6 +44,7 @@ body {
 
 html, body {
   overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 /* ── iOS safe-area ───────────────────────────────────────────────────────── */

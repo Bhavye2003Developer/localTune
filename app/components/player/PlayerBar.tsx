@@ -340,24 +340,24 @@ export const PlayerBar = memo(function PlayerBar({
         </div>
 
         {/* Right — secondary controls */}
-        <div className="flex items-center gap-0 px-1 sm:px-0 sm:ml-auto overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
+        <div className="flex items-center gap-0 px-1 sm:px-0 sm:ml-auto min-w-0">
 
-          {/* Time */}
+          {/* Time — mobile only shows current, desktop shows current/total */}
           <span ref={timeRef} className="tabular-nums text-[10px] shrink-0 px-1.5"
             style={{ color: 'var(--t2)', fontWeight: 400 }}>
             {formatTime(position)}&nbsp;/&nbsp;{formatTime(duration)}
           </span>
 
-          {/* Volume */}
+          {/* Volume — hidden on mobile to save space */}
           <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}
-            className="flex items-center justify-center w-10 h-10 transition-colors shrink-0"
+            className="hidden sm:flex items-center justify-center w-10 h-10 transition-colors shrink-0"
             style={{ color: 'var(--t2)' }}>
             {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
           </button>
-          {/* Volume scrubber */}
+          {/* Volume scrubber — desktop only */}
           <div
             ref={volRef}
-            className="relative w-14 sm:w-16 h-10 flex items-center cursor-pointer shrink-0 group"
+            className="hidden sm:flex relative w-16 h-10 items-center cursor-pointer shrink-0 group"
             onPointerDown={onVolPointerDown}
             onPointerMove={onVolPointerMove}
             onPointerUp={onVolPointerUp}
@@ -374,19 +374,25 @@ export const PlayerBar = memo(function PlayerBar({
             </div>
           </div>
 
-          <ABtn onClick={cycleShuffle} title={shuffleMode === 'off' ? 'Shuffle off' : 'Shuffle on'} active={shuffleMode !== 'off'}>
-            <Shuffle size={13} />
-          </ABtn>
+          {/* Shuffle — desktop only */}
+          <div className="hidden sm:block">
+            <ABtn onClick={cycleShuffle} title={shuffleMode === 'off' ? 'Shuffle off' : 'Shuffle on'} active={shuffleMode !== 'off'}>
+              <Shuffle size={13} />
+            </ABtn>
+          </div>
 
-          <ABtn onClick={cycleLoopMode}
-            title={loopMode === 'off' ? 'Loop off' : loopMode === 'track' ? 'Loop track' : 'Loop queue'}
-            active={loopMode !== 'off'}>
-            <LoopIcon mode={loopMode} />
-          </ABtn>
+          {/* Loop mode — desktop only */}
+          <div className="hidden sm:block">
+            <ABtn onClick={cycleLoopMode}
+              title={loopMode === 'off' ? 'Loop off' : loopMode === 'track' ? 'Loop track' : 'Loop queue'}
+              active={loopMode !== 'off'}>
+              <LoopIcon mode={loopMode} />
+            </ABtn>
+          </div>
 
-          {/* Speed */}
+          {/* Speed — desktop only */}
           <button onClick={nextSpeed} title={`Speed: ${speed}×`}
-            className="flex items-center justify-center h-10 px-2 text-[10px] transition-colors min-w-10 shrink-0 rounded-lg"
+            className="hidden sm:flex items-center justify-center h-10 px-2 text-[10px] transition-colors min-w-10 shrink-0 rounded-lg"
             style={{
               color: speed !== 1 ? 'var(--a)' : 'var(--t2)',
               background: speed !== 1 ? '#f59e0b18' : 'transparent',
@@ -414,8 +420,8 @@ export const PlayerBar = memo(function PlayerBar({
             ?
           </button>
 
-          {/* A-B loop */}
-          <div className="flex items-center gap-0 pl-1 ml-1 shrink-0" style={{ borderLeft: '1px solid var(--br)' }}>
+          {/* A-B loop — desktop only */}
+          <div className="hidden sm:flex items-center gap-0 pl-1 ml-1 shrink-0" style={{ borderLeft: '1px solid var(--br)' }}>
             <button onClick={setLoopA} disabled={!track} title="Set loop start (A)"
               className="flex items-center justify-center h-10 px-2 text-[10px] font-bold transition-colors disabled:opacity-20 rounded"
               style={{
