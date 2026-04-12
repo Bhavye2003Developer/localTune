@@ -35,9 +35,9 @@ export const ReverbStage = memo(function ReverbStage({ dragHandleProps }: Props)
             onClick={() => setReverbPreset(p)}
             className="h-[44px] px-3 font-mono text-[9px] uppercase tracking-widest transition-colors touch-manipulation rounded"
             style={{
-              background: s.preset === p ? 'rgba(0,212,255,0.12)' : 'rgba(255,255,255,0.04)',
-              color: s.preset === p ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
-              border: `1px solid ${s.preset === p ? 'var(--nx-cyan)' : 'transparent'}`,
+              background: s.preset === p ? '#f59e0b18' : 'rgba(255,255,255,0.04)',
+              color: s.preset === p ? 'var(--a)' : 'var(--t2)',
+              border: `1px solid ${s.preset === p ? '#f59e0b45' : 'transparent'}`,
             }}
           >
             {p}
@@ -49,7 +49,7 @@ export const ReverbStage = memo(function ReverbStage({ dragHandleProps }: Props)
         <input
           type="range" min={0} max={1} step={0.01} value={s.wet}
           onChange={e => setReverbWet(parseFloat(e.target.value))}
-          className="flex-1 h-1 accent-cyan-400"
+          className="flex-1 h-1 accent-amber-400"
         />
         <span className="font-mono text-[9px] w-14 text-right opacity-60">
           {Math.round(s.wet * 100)}%

@@ -36,7 +36,7 @@ export const StereoWidenerStage = memo(function StereoWidenerStage({ dragHandleP
         <input
           type="range" min={0} max={200} step={1} value={s.width}
           onChange={e => setStereoWidth(parseInt(e.target.value))}
-          className="flex-1 h-1 accent-cyan-400"
+          className="flex-1 h-1 accent-amber-400"
         />
         <span className="font-mono text-[9px] w-14 text-right opacity-60">{widthLabel(s.width)}</span>
       </div>

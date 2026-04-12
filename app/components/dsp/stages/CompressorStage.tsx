@@ -29,7 +29,7 @@ function DspSlider({
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
-        className="flex-1 h-1 accent-cyan-400"
+        className="flex-1 h-1 accent-amber-400"
       />
       <span className="font-mono text-[9px] w-14 text-right opacity-60">{fmt(value)}</span>
     </div>
@@ -59,7 +59,7 @@ function GRMeter() {
           className="h-full rounded-full transition-none"
           style={{
             width: `${pct}%`,
-            background: pct > 75 ? 'var(--nx-red)' : pct > 40 ? '#f59e0b' : 'var(--nx-cyan)',
+            background: pct > 75 ? 'var(--orange)' : pct > 40 ? 'var(--a)' : 'var(--green)',
           }}
         />
       </div>

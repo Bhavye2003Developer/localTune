@@ -22,7 +22,7 @@ export function EQLink({ dragHandleProps, onOpenEQ }: Props) {
         <button
           onClick={onOpenEQ}
           className="font-mono text-[9px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity min-h-[44px] px-2 touch-manipulation"
-          style={{ color: 'var(--nx-cyan)' }}
+          style={{ color: 'var(--a)' }}
         >
           Open EQ →
         </button>

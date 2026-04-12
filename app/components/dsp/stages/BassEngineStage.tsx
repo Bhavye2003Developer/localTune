@@ -29,7 +29,7 @@ function DspSlider({
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
-        className="flex-1 h-1 accent-cyan-400"
+        className="flex-1 h-1 accent-amber-400"
       />
       <span className="font-mono text-[9px] w-12 text-right opacity-60">
         {value >= 0 ? '+' : ''}{value.toFixed(1)}{unit}
@@ -44,9 +44,9 @@ function DspToggle({ label, value, onChange }: { label: string; value: boolean; 
       onClick={() => onChange(!value)}
       className="h-[44px] px-3 rounded font-mono text-[9px] uppercase tracking-widest transition-colors shrink-0 touch-manipulation"
       style={{
-        background: value ? 'rgba(0,212,255,0.12)' : 'rgba(255,255,255,0.04)',
-        color: value ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
-        border: `1px solid ${value ? 'var(--nx-cyan)' : 'transparent'}`,
+        background: value ? '#f59e0b18' : 'rgba(255,255,255,0.04)',
+        color: value ? 'var(--a)' : 'var(--t2)',
+        border: `1px solid ${value ? '#f59e0b45' : 'transparent'}`,
       }}
     >
       {label}

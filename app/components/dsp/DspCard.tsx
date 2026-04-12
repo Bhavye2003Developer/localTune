@@ -27,7 +27,7 @@ export const DspCard = memo(function DspCard({
   return (
     <div
       className="border rounded-none sm:rounded border-white/8 overflow-hidden"
-      style={{ background: 'var(--nx-bg-panel)' }}
+      style={{ background: 'var(--s1)' }}
     >
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 select-none">
@@ -47,15 +47,15 @@ export const DspCard = memo(function DspCard({
             onClick={() => onBypassToggle(!bypassed)}
             title={bypassed ? 'Enable stage' : 'Bypass stage'}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center shrink-0 transition-colors touch-manipulation"
-            style={{ color: bypassed ? 'var(--nx-text-dim)' : 'var(--nx-cyan)' }}
+            style={{ color: bypassed ? 'var(--t3)' : 'var(--a)' }}
           >
             <Power size={13} />
           </button>
         )}
 
         <span
-          className="font-mono uppercase tracking-widest text-[9px] flex-1"
-          style={{ color: bypassed ? 'var(--nx-text-dim)' : 'var(--nx-cyan-dim)' }}
+          className="text-[11px] font-semibold flex-1"
+          style={{ color: bypassed ? 'var(--t3)' : 'var(--t2)' }}
         >
           {title}
         </span>
