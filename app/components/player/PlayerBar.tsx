@@ -404,9 +404,9 @@ export const PlayerBar = memo(function PlayerBar({
             <SlidersHorizontal size={13} />
           </ABtn>
 
-          <NxBtn onClick={onToggleDSP} title="DSP chain (D)" active={dspOpen}>
+          <ABtn onClick={onToggleDSP} title="DSP chain (D)" active={dspOpen}>
             <span className="font-mono text-[10px] font-bold">DSP</span>
-          </NxBtn>
+          </ABtn>
 
           <button onClick={onOpenShortcuts} title="Keyboard shortcuts (?)"
             className="hidden sm:flex items-center justify-center w-10 h-10 text-[10px] transition-colors shrink-0"
