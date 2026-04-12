@@ -58,14 +58,16 @@ function renderStage(id: StageId, dragHandleProps: Record<string, unknown>, onOp
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 interface DSPPanelProps {
-  open: boolean;
-  onClose: () => void;
   onOpenEQ: () => void;
   detectedReplayGain: string | null;
+  /** @deprecated — visibility now controlled by parent mount/unmount */
+  open?: boolean;
+  /** @deprecated — visibility now controlled by parent mount/unmount */
+  onClose?: () => void;
 }
 
 export const DSPPanel = memo(function DSPPanel({
-  open, onClose: _onClose, onOpenEQ, detectedReplayGain,
+  onOpenEQ, detectedReplayGain, open: _open, onClose: _onClose,
 }: DSPPanelProps) {
   const [order, setOrder] = useState<StageId[]>(() => getStageOrder());
 
@@ -85,11 +87,8 @@ export const DSPPanel = memo(function DSPPanel({
   }, [order]);
 
   return (
-    <div
-      className="overflow-hidden transition-all duration-200 ease-in-out bg-black/85 backdrop-blur-xl border-t border-white/8"
-      style={{ height: open ? 280 : 0, maxHeight: open ? 280 : 0, opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' }}
-    >
-      <div className="h-[280px] overflow-y-auto flex flex-col gap-0.5 p-2">
+    <div className="flex flex-col h-full overflow-y-auto" style={{ minHeight: 280 }}>
+      <div className="flex flex-col gap-0.5 p-2">
         {/* Fixed top: ReplayGain */}
         <ReplayGainStage detectedGain={detectedReplayGain} />
 

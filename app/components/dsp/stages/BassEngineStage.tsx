@@ -1,9 +1,10 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { DspCard } from '../DspCard';
 import {
   setStageBypass,
+  getStageBypass,
   setBassSubBass,
   setBassShelf,
   setBassCompressorEnabled,
@@ -55,23 +56,29 @@ function DspToggle({ label, value, onChange }: { label: string; value: boolean; 
 }
 
 export const BassEngineStage = memo(function BassEngineStage({ dragHandleProps }: Props) {
-  const s = getDSPSettings().bassEngine;
+  const init = getDSPSettings().bassEngine;
+  const [subBass,    setSubBassState]    = useState(init.subBass);
+  const [bassShelf,  setBassShelfState]  = useState(init.bassShelf);
+  const [compressor, setCompressorState] = useState(init.compressor);
+  const [monoBass,   setMonoBassState]   = useState(init.monoBass);
+  const [harmonic,   setHarmonicState]   = useState(init.harmonicEnhancer);
+  const [bypassed,   setBypassedState]   = useState(() => getStageBypass('bassEngine'));
 
   return (
     <DspCard
       title="Bass Engine"
-      bypassed={s.bypassed}
-      onBypassToggle={v => { setStageBypass('bassEngine', v); }}
+      bypassed={bypassed}
+      onBypassToggle={v => { setStageBypass('bassEngine', v); setBypassedState(v); }}
       showBypass
       showDragHandle
       dragHandleProps={dragHandleProps}
     >
-      <DspSlider label="Sub-bass" value={s.subBass} min={-12} max={12} onChange={setBassSubBass} />
-      <DspSlider label="Bass shelf" value={s.bassShelf} min={-12} max={12} onChange={setBassShelf} />
+      <DspSlider label="Sub-bass"  value={subBass}   min={-12} max={12} onChange={v => { setBassSubBass(v);  setSubBassState(v);   }} />
+      <DspSlider label="Bass shelf" value={bassShelf} min={-12} max={12} onChange={v => { setBassShelf(v);   setBassShelfState(v); }} />
       <div className="flex flex-wrap gap-2 mt-1">
-        <DspToggle label="Compressor" value={s.compressor} onChange={setBassCompressorEnabled} />
-        <DspToggle label="Mono bass" value={s.monoBass} onChange={setBassMonoBass} />
-        <DspToggle label="Harmonic" value={s.harmonicEnhancer} onChange={setBassHarmonicEnhancer} />
+        <DspToggle label="Compressor" value={compressor} onChange={v => { setBassCompressorEnabled(v); setCompressorState(v); }} />
+        <DspToggle label="Mono bass"  value={monoBass}   onChange={v => { setBassMonoBass(v);          setMonoBassState(v);   }} />
+        <DspToggle label="Harmonic"   value={harmonic}   onChange={v => { setBassHarmonicEnhancer(v);  setHarmonicState(v);   }} />
       </div>
     </DspCard>
   );

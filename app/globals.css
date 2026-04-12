@@ -67,3 +67,9 @@ html, body {
 @utility animate-slide-up {
   animation: slideUp 0.2s ease;
 }
+
+/* ── Vinyl platter spin ───────────────────────────────────────────────────── */
+@keyframes vinylSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

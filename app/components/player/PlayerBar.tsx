@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useRef, useState, useEffect, memo, type MouseEvent, type PointerEvent } from 'react';
+import { useCallback, useRef, useEffect, memo, type PointerEvent } from 'react';
 import {
   SkipBack, SkipForward, Play, Pause,
   Volume2, VolumeX, Shuffle, Repeat, Repeat1,
-  Library, RotateCcw, ListMusic, Music, SlidersHorizontal,
+  RotateCcw, Music,
 } from 'lucide-react';
 import { usePlayer, formatTime, getAudioEl } from '../../lib/playerContext';
 import type { LoopMode } from '../../lib/playerContext';
@@ -12,16 +12,8 @@ import type { LoopMode } from '../../lib/playerContext';
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
 interface PlayerBarProps {
-  libOpen: boolean;
-  onToggleLib: () => void;
-  queueOpen: boolean;
-  onToggleQueue: () => void;
   onOpenNowPlaying: () => void;
-  onOpenShortcuts: () => void;
-  eqOpen: boolean;
-  onToggleEQ: () => void;
-  dspOpen: boolean;
-  onToggleDSP: () => void;
+  onOpenShortcuts:  () => void;
 }
 
 function LoopIcon({ mode }: { mode: LoopMode }) {
@@ -54,9 +46,7 @@ function ABtn({ onClick, title, active, children, disabled }: {
 }
 
 export const PlayerBar = memo(function PlayerBar({
-  libOpen, onToggleLib, queueOpen, onToggleQueue,
-  onOpenNowPlaying, onOpenShortcuts, eqOpen, onToggleEQ,
-  dspOpen, onToggleDSP,
+  onOpenNowPlaying, onOpenShortcuts,
 }: PlayerBarProps) {
   const {
     state,
@@ -78,22 +68,11 @@ export const PlayerBar = memo(function PlayerBar({
   const progressRef = useRef<HTMLDivElement>(null);
   const fillRef     = useRef<HTMLDivElement>(null);
   const thumbRef    = useRef<HTMLDivElement>(null);
-  const timeRef     = useRef<HTMLSpanElement>(null);
+  const timeCurrentRef = useRef<HTMLSpanElement>(null);
+  const timeTotalRef   = useRef<HTMLSpanElement>(null);
   const draggingRef = useRef(false);
   const volRef      = useRef<HTMLDivElement>(null);
   const volDragging = useRef(false);
-  const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; pct: number }>({
-    visible: false, x: 0, pct: 0,
-  });
-
-  // Close context menu on outside click
-  useEffect(() => {
-    if (!contextMenu.visible) return;
-    const close = () => setContextMenu(m => ({ ...m, visible: false }));
-    window.addEventListener('pointerdown', close);
-    return () => window.removeEventListener('pointerdown', close);
-  }, [contextMenu.visible]);
-
   // RAF-driven smooth progress bar
   useEffect(() => {
     let rafId: number;
@@ -103,10 +82,10 @@ export const PlayerBar = memo(function PlayerBar({
         const dur = el.duration;
         if (isFinite(dur) && dur > 0) {
           const p = (el.currentTime / dur) * 100;
-          if (fillRef.current)  fillRef.current.style.width = `${p}%`;
-          if (thumbRef.current) thumbRef.current.style.left = `calc(${p}% - 5px)`;
-          if (timeRef.current)  timeRef.current.textContent =
-            `${formatTime(el.currentTime)}\u00a0/\u00a0${formatTime(dur)}`;
+          if (fillRef.current)        fillRef.current.style.width = `${p}%`;
+          if (thumbRef.current)       thumbRef.current.style.left = `calc(${p}% - 5px)`;
+          if (timeCurrentRef.current) timeCurrentRef.current.textContent = formatTime(el.currentTime);
+          if (timeTotalRef.current)   timeTotalRef.current.textContent   = formatTime(dur);
         }
       }
       rafId = requestAnimationFrame(tick);
@@ -115,7 +94,7 @@ export const PlayerBar = memo(function PlayerBar({
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const seekFromEvent = useCallback((e: MouseEvent | globalThis.PointerEvent) => {
+  const seekFromEvent = useCallback((e: globalThis.PointerEvent) => {
     if (!progressRef.current || !duration) return;
     const rect = progressRef.current.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -133,21 +112,6 @@ export const PlayerBar = memo(function PlayerBar({
   }, [seekFromEvent]);
 
   const onPointerUp = useCallback(() => { draggingRef.current = false; }, []);
-
-  const onContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (!progressRef.current || !duration) return;
-    const rect = progressRef.current.getBoundingClientRect();
-    const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    setContextMenu({ visible: true, x: pct * 100, pct });
-  }, [duration]);
-
-  const onSetLoopPoint = useCallback((point: 'a' | 'b') => {
-    if (!duration) return;
-    const seconds = contextMenu.pct * duration;
-    if (point === 'a') setLoopAAt(seconds); else setLoopBAt(seconds);
-    setContextMenu(m => ({ ...m, visible: false }));
-  }, [contextMenu.pct, duration, setLoopAAt, setLoopBAt]);
 
   const setVolFromEvent = useCallback((e: globalThis.PointerEvent) => {
     if (!volRef.current) return;
@@ -187,210 +151,113 @@ export const PlayerBar = memo(function PlayerBar({
   }, [speed, setSpeed]);
 
   return (
-    <div className="pb-safe" style={{ background: 'var(--s1)', borderTop: '1px solid var(--br)' }}>
+    <div className="pb-safe shrink-0" style={{ background: 'var(--s1)', borderTop: '1px solid var(--br)' }}>
 
-      {/* ── Seek bar ── */}
-      <div
-        ref={progressRef}
-        tabIndex={0}
-        className="relative cursor-pointer group py-2.5 px-0 focus:outline-none"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onContextMenu={onContextMenu}
-        onKeyDown={onSeekBarKeyDown}
-      >
-        <div className="relative h-[3px] group-hover:h-[4px] transition-all" style={{ background: 'var(--s5)' }}>
+      {/* ── Row 1: Controls (h-14) ── */}
+      <div className="flex items-center gap-1 px-2 h-14">
 
-          {/* A-B region */}
-          {loopAPct !== null && loopBPct !== null && (
-            <div
-              className="absolute top-0 h-full"
-              style={{ left: `${loopAPct}%`, width: `${loopBPct - loopAPct}%`, background: 'rgba(245,158,11,0.2)' }}
-            />
-          )}
-
-          {/* Fill */}
-          <div ref={fillRef} className="absolute top-0 left-0 h-full" style={{ width: `${pct}%`, background: 'var(--a)' }} />
-
-          {/* Loop markers */}
-          {loopAPct !== null && (
-            <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopAPct}%`, background: 'var(--a)' }} />
-          )}
-          {loopBPct !== null && (
-            <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopBPct}%`, background: 'var(--a)' }} />
-          )}
-
-          {/* Round thumb */}
+        {/* Left: thumbnail + title */}
+        <button
+          onClick={track ? onOpenNowPlaying : undefined}
+          disabled={!track}
+          className="flex items-center gap-2 min-w-0 w-44 shrink-0 text-left disabled:cursor-default"
+        >
           <div
-            ref={thumbRef}
-            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ left: `calc(${pct}% - 5px)`, background: 'var(--a)' }}
-          />
-        </div>
-
-        {/* Context menu */}
-        {contextMenu.visible && (
-          <div
-            className="absolute z-50 py-1 shadow-xl rounded-lg overflow-hidden"
-            style={{
-              left: `clamp(0px, ${contextMenu.x}%, calc(100% - 160px))`,
-              bottom: '100%',
-              marginBottom: 4,
-              background: 'var(--s2)',
-              border: '1px solid var(--br)',
-            }}
+            className="w-10 h-10 shrink-0 flex items-center justify-center overflow-hidden rounded-md"
+            style={{ border: '1px solid var(--br)', background: 'var(--s2)' }}
           >
-            {[
-              { label: 'Set loop start (A)', point: 'a' as const },
-              { label: 'Set loop end (B)',   point: 'b' as const },
-            ].map(({ label, point }) => (
-              <button
-                key={point}
-                className="block w-full px-4 py-2 text-[11px] font-medium text-left transition-colors whitespace-nowrap"
-                style={{ color: 'var(--t2)' }}
-                onPointerDown={e => { e.stopPropagation(); onSetLoopPoint(point); }}
-                onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--a)'; (e.target as HTMLElement).style.background = 'var(--s3)'; }}
-                onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--t2)'; (e.target as HTMLElement).style.background = ''; }}
-              >
-                {label}
-              </button>
-            ))}
+            {track?.coverUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={track.coverUrl} alt="cover" className="w-full h-full object-cover" />
+              : <Music size={14} style={{ color: 'var(--t3)' }} />
+            }
           </div>
-        )}
-      </div>
+          <div className="flex-1 min-w-0">
+            {track ? (
+              <>
+                <p className="truncate leading-tight" style={{ color: 'var(--t1)', fontSize: 11.5, fontWeight: 600 }}>
+                  {track.title}
+                </p>
+                <p className="truncate" style={{ color: 'var(--t2)', fontSize: 9.5, fontWeight: 500 }}>
+                  {track.artist || track.name}
+                </p>
+              </>
+            ) : (
+              <p style={{ color: 'var(--t3)', fontSize: 11, fontWeight: 500 }}>No track</p>
+            )}
+          </div>
+        </button>
 
-      {/* ── Controls ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1 sm:px-2 sm:h-14">
-
-        {/* Left — track info + transport */}
-        <div className="flex items-center gap-1 px-2 sm:px-0 sm:gap-1.5 sm:flex-none">
-
-          <ABtn onClick={onToggleLib} title="Library" active={libOpen}>
-            <Library size={16} />
+        {/* Center: transport */}
+        <div className="flex-1 flex items-center justify-center gap-0">
+          {/* Shuffle */}
+          <ABtn onClick={cycleShuffle} title={shuffleMode === 'off' ? 'Shuffle off' : 'Shuffle on'} active={shuffleMode !== 'off'}>
+            <Shuffle size={13} />
           </ABtn>
 
-          {/* Album art + track info */}
+          {/* Prev */}
           <button
-            onClick={track ? onOpenNowPlaying : undefined}
-            disabled={!track}
-            className="flex items-center gap-2 min-w-0 flex-1 sm:flex-none sm:w-44 text-left disabled:cursor-default"
+            onClick={prev} disabled={!track}
+            className="flex items-center justify-center w-11 h-11 rounded-lg transition-colors disabled:opacity-20"
+            style={{ color: 'var(--t2)' }}
+            onMouseEnter={e => { (e.currentTarget).style.color = 'var(--a)'; }}
+            onMouseLeave={e => { (e.currentTarget).style.color = 'var(--t2)'; }}
           >
-            <div
-              className="w-10 h-10 shrink-0 flex items-center justify-center overflow-hidden rounded-md"
-              style={{ border: '1px solid var(--br)', background: 'var(--s2)' }}
-            >
-              {track?.coverUrl
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={track.coverUrl} alt="cover" className="w-full h-full object-cover" />
-                : <Music size={14} style={{ color: 'var(--t3)' }} />
-              }
-            </div>
-            <div className="flex-1 min-w-0">
-              {track ? (
-                <>
-                  <p className="truncate leading-tight" style={{ color: 'var(--t1)', fontSize: 11.5, fontWeight: 600 }}>
-                    {track.title}
-                  </p>
-                  <p className="truncate" style={{ color: 'var(--t2)', fontSize: 9.5, fontWeight: 500 }}>
-                    {track.artist || track.name}
-                  </p>
-                </>
-              ) : (
-                <p style={{ color: 'var(--t3)', fontSize: 11, fontWeight: 500 }}>No track</p>
-              )}
-            </div>
+            <SkipBack size={16} />
           </button>
 
-          {/* Transport */}
-          <div className="flex items-center gap-0 ml-auto sm:ml-0">
-            <button onClick={prev} disabled={!track}
-              className="flex items-center justify-center w-11 h-11 rounded-lg transition-colors disabled:opacity-20"
-              style={{ color: 'var(--t2)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--a)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--t2)'; }}
-            >
-              <SkipBack size={16} />
-            </button>
+          {/* Play/pause — amber glow */}
+          <button
+            onClick={togglePlay}
+            disabled={!track}
+            className="flex items-center justify-center w-10 h-10 mx-1 rounded-full transition-all disabled:opacity-20"
+            style={{
+              background: playing ? 'var(--a)' : 'transparent',
+              border: '1px solid #f59e0b45',
+              color: playing ? '#000' : 'var(--a)',
+              boxShadow: '0 0 12px #F59E0B55',
+            }}
+          >
+            {playing ? <Pause size={16} /> : <Play size={16} className="translate-x-0.5" />}
+          </button>
 
-            {/* Play button — amber glow */}
-            <button
-              onClick={togglePlay}
-              disabled={!track}
-              className="flex items-center justify-center w-10 h-10 mx-1 rounded-full transition-all disabled:opacity-20"
-              style={{
-                background: playing ? 'var(--a)' : 'transparent',
-                border: '1px solid #f59e0b45',
-                color: playing ? '#000' : 'var(--a)',
-                boxShadow: '0 0 12px #F59E0B55',
-              }}
-            >
-              {playing ? <Pause size={16} /> : <Play size={16} className="translate-x-0.5" />}
-            </button>
+          {/* Next */}
+          <button
+            onClick={next} disabled={!track}
+            className="flex items-center justify-center w-11 h-11 rounded-lg transition-colors disabled:opacity-20"
+            style={{ color: 'var(--t2)' }}
+            onMouseEnter={e => { (e.currentTarget).style.color = 'var(--a)'; }}
+            onMouseLeave={e => { (e.currentTarget).style.color = 'var(--t2)'; }}
+          >
+            <SkipForward size={16} />
+          </button>
 
-            <button onClick={next} disabled={!track}
-              className="flex items-center justify-center w-11 h-11 rounded-lg transition-colors disabled:opacity-20"
-              style={{ color: 'var(--t2)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--a)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--t2)'; }}
-            >
-              <SkipForward size={16} />
-            </button>
-          </div>
+          {/* Loop */}
+          <ABtn onClick={cycleLoopMode}
+            title={loopMode === 'off' ? 'Loop off' : loopMode === 'track' ? 'Loop track' : 'Loop queue'}
+            active={loopMode !== 'off'}>
+            <LoopIcon mode={loopMode} />
+          </ABtn>
         </div>
 
-        {/* Right — secondary controls */}
-        <div className="flex items-center gap-0 px-1 sm:px-0 sm:ml-auto min-w-0">
+        {/* Right: secondary controls */}
+        <div className="flex items-center gap-0 shrink-0">
 
-          {/* Time — mobile only shows current, desktop shows current/total */}
-          <span ref={timeRef} className="tabular-nums text-[10px] shrink-0 px-1.5"
-            style={{ color: 'var(--t2)', fontWeight: 400 }}>
-            {formatTime(position)}&nbsp;/&nbsp;{formatTime(duration)}
+          {/* Analysis chips — placeholders until Feature 3 ships */}
+          <span
+            className="hidden sm:flex items-center px-2 h-6 rounded mr-1"
+            style={{ color: 'var(--t3)', border: '1px solid var(--br)', background: 'var(--s3)', fontSize: 8, fontWeight: 500 }}
+          >
+            Key —
+          </span>
+          <span
+            className="hidden sm:flex items-center px-2 h-6 rounded mr-1"
+            style={{ color: 'var(--t3)', border: '1px solid var(--br)', background: 'var(--s3)', fontSize: 8, fontWeight: 500 }}
+          >
+            BPM —
           </span>
 
-          {/* Volume — hidden on mobile to save space */}
-          <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}
-            className="hidden sm:flex items-center justify-center w-10 h-10 transition-colors shrink-0"
-            style={{ color: 'var(--t2)' }}>
-            {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
-          </button>
-          {/* Volume scrubber — desktop only */}
-          <div
-            ref={volRef}
-            className="hidden sm:flex relative w-16 h-10 items-center cursor-pointer shrink-0 group"
-            onPointerDown={onVolPointerDown}
-            onPointerMove={onVolPointerMove}
-            onPointerUp={onVolPointerUp}
-          >
-            <div className="relative w-full h-[3px] rounded-full" style={{ background: 'var(--s5)' }}>
-              <div
-                className="absolute top-0 left-0 h-full rounded-full"
-                style={{ width: `${(muted ? 0 : volume) * 100}%`, background: 'var(--a)' }}
-              />
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ left: `calc(${(muted ? 0 : volume) * 100}% - 4px)`, background: 'var(--a)' }}
-              />
-            </div>
-          </div>
-
-          {/* Shuffle — desktop only */}
-          <div className="hidden sm:block">
-            <ABtn onClick={cycleShuffle} title={shuffleMode === 'off' ? 'Shuffle off' : 'Shuffle on'} active={shuffleMode !== 'off'}>
-              <Shuffle size={13} />
-            </ABtn>
-          </div>
-
-          {/* Loop mode — desktop only */}
-          <div className="hidden sm:block">
-            <ABtn onClick={cycleLoopMode}
-              title={loopMode === 'off' ? 'Loop off' : loopMode === 'track' ? 'Loop track' : 'Loop queue'}
-              active={loopMode !== 'off'}>
-              <LoopIcon mode={loopMode} />
-            </ABtn>
-          </div>
-
-          {/* Speed — desktop only */}
+          {/* Speed */}
           <button onClick={nextSpeed} title={`Speed: ${speed}×`}
             className="hidden sm:flex items-center justify-center h-10 px-2 text-[10px] transition-colors min-w-10 shrink-0 rounded-lg"
             style={{
@@ -402,26 +269,8 @@ export const PlayerBar = memo(function PlayerBar({
             {speed}×
           </button>
 
-          <ABtn onClick={onToggleQueue} title="Queue" active={queueOpen}>
-            <ListMusic size={13} />
-          </ABtn>
-
-          <ABtn onClick={onToggleEQ} title="EQ (E)" active={eqOpen}>
-            <SlidersHorizontal size={13} />
-          </ABtn>
-
-          <ABtn onClick={onToggleDSP} title="DSP chain (D)" active={dspOpen}>
-            <span className="font-mono text-[10px] font-bold">DSP</span>
-          </ABtn>
-
-          <button onClick={onOpenShortcuts} title="Keyboard shortcuts (?)"
-            className="hidden sm:flex items-center justify-center w-10 h-10 text-[10px] transition-colors shrink-0"
-            style={{ color: 'var(--t2)', fontWeight: 700 }}>
-            ?
-          </button>
-
-          {/* A-B loop — desktop only */}
-          <div className="hidden sm:flex items-center gap-0 pl-1 ml-1 shrink-0" style={{ borderLeft: '1px solid var(--br)' }}>
+          {/* A-B loop */}
+          <div className="hidden sm:flex items-center gap-0 px-1 mx-1 shrink-0" style={{ borderLeft: '1px solid var(--br)', borderRight: '1px solid var(--br)' }}>
             <button onClick={setLoopA} disabled={!track} title="Set loop start (A)"
               className="flex items-center justify-center h-10 px-2 text-[10px] font-bold transition-colors disabled:opacity-20 rounded"
               style={{
@@ -458,7 +307,98 @@ export const PlayerBar = memo(function PlayerBar({
               </button>
             )}
           </div>
+
+          {/* Volume mute */}
+          <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}
+            className="hidden sm:flex items-center justify-center w-10 h-10 transition-colors shrink-0"
+            style={{ color: 'var(--t2)' }}>
+            {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+          </button>
+
+          {/* Volume slider */}
+          <div
+            ref={volRef}
+            className="hidden sm:flex relative w-16 h-10 items-center cursor-pointer shrink-0 group"
+            onPointerDown={onVolPointerDown}
+            onPointerMove={onVolPointerMove}
+            onPointerUp={onVolPointerUp}
+          >
+            <div className="relative w-full h-[3px] rounded-full" style={{ background: 'var(--s5)' }}>
+              <div
+                className="absolute top-0 left-0 h-full rounded-full"
+                style={{ width: `${(muted ? 0 : volume) * 100}%`, background: 'var(--a)' }}
+              />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ left: `calc(${(muted ? 0 : volume) * 100}% - 4px)`, background: 'var(--a)' }}
+              />
+            </div>
+          </div>
+
+          {/* Keyboard shortcuts (desktop only) */}
+          <button onClick={onOpenShortcuts} title="Keyboard shortcuts (?)"
+            className="hidden sm:flex items-center justify-center w-10 h-10 text-[10px] transition-colors shrink-0"
+            style={{ color: 'var(--t2)', fontWeight: 700 }}>
+            ?
+          </button>
         </div>
+      </div>
+
+      {/* ── Row 2: Seek bar (h-7) ── */}
+      <div className="flex items-center gap-2 px-3 pb-1.5">
+        {/* Current time */}
+        <span
+          ref={timeCurrentRef}
+          className="tabular-nums text-[10px] shrink-0 w-10 text-right"
+          style={{ color: 'var(--t2)', fontWeight: 400 }}
+        >
+          {formatTime(position)}
+        </span>
+
+        {/* Seek track */}
+        <div
+          ref={progressRef}
+          tabIndex={0}
+          className="flex-1 relative cursor-pointer group py-2 focus:outline-none"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onKeyDown={onSeekBarKeyDown}
+        >
+          <div className="relative h-[3px] group-hover:h-[4px] transition-all" style={{ background: 'var(--s5)' }}>
+            {/* A-B region */}
+            {loopAPct !== null && loopBPct !== null && (
+              <div
+                className="absolute top-0 h-full"
+                style={{ left: `${loopAPct}%`, width: `${loopBPct - loopAPct}%`, background: 'rgba(245,158,11,0.2)' }}
+              />
+            )}
+            {/* Fill */}
+            <div ref={fillRef} className="absolute top-0 left-0 h-full" style={{ width: `${pct}%`, background: 'var(--a)' }} />
+            {/* Loop markers */}
+            {loopAPct !== null && (
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopAPct}%`, background: 'var(--a)' }} />
+            )}
+            {loopBPct !== null && (
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-3" style={{ left: `${loopBPct}%`, background: 'var(--a)' }} />
+            )}
+            {/* Thumb */}
+            <div
+              ref={thumbRef}
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ left: `calc(${pct}% - 5px)`, background: 'var(--a)' }}
+            />
+          </div>
+        </div>
+
+        {/* Total time */}
+        <span
+          ref={timeTotalRef}
+          className="tabular-nums text-[10px] shrink-0 w-10"
+          style={{ color: 'var(--t2)', fontWeight: 400 }}
+        >
+          {formatTime(duration)}
+        </span>
       </div>
     </div>
   );

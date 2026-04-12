@@ -233,6 +233,12 @@ export function dbToLinear(db: number): number {
   return Math.pow(10, db / 20);
 }
 
+/** Smooth AudioParam change — never set .value directly during playback */
+function setParam(param: AudioParam, value: number): void {
+  if (_ctx) param.setTargetAtTime(value, _ctx.currentTime, 0.01);
+  else param.value = value;
+}
+
 function import_eqNodes(ctx: AudioContext): void {
   eqNodes = INITIAL_BANDS.map(band => {
     const node = ctx.createBiquadFilter();
@@ -487,13 +493,13 @@ export function setEQBypass(on: boolean): void {
 // ─── Bass Engine ──────────────────────────────────────────────────────────────
 
 export function setBassSubBass(db: number): void {
-  if (bassSubBassNode) bassSubBassNode.gain.value = db;
+  if (bassSubBassNode) setParam(bassSubBassNode.gain, db);
   _settings.bassEngine.subBass = db;
   scheduleSave();
 }
 
 export function setBassShelf(db: number): void {
-  if (bassBassShelfNode) bassBassShelfNode.gain.value = db;
+  if (bassBassShelfNode) setParam(bassBassShelfNode.gain, db);
   _settings.bassEngine.bassShelf = db;
   scheduleSave();
 }
@@ -539,37 +545,37 @@ export function setBassHarmonicEnhancer(enabled: boolean): void {
 // ─── Compressor ───────────────────────────────────────────────────────────────
 
 export function setCompressorThreshold(db: number): void {
-  if (compNode) compNode.threshold.value = db;
+  if (compNode) setParam(compNode.threshold, db);
   _settings.compressor.threshold = db;
   scheduleSave();
 }
 
 export function setCompressorRatio(ratio: number): void {
-  if (compNode) compNode.ratio.value = ratio;
+  if (compNode) setParam(compNode.ratio, ratio);
   _settings.compressor.ratio = ratio;
   scheduleSave();
 }
 
 export function setCompressorAttack(s: number): void {
-  if (compNode) compNode.attack.value = s;
+  if (compNode) setParam(compNode.attack, s);
   _settings.compressor.attack = s;
   scheduleSave();
 }
 
 export function setCompressorRelease(s: number): void {
-  if (compNode) compNode.release.value = s;
+  if (compNode) setParam(compNode.release, s);
   _settings.compressor.release = s;
   scheduleSave();
 }
 
 export function setCompressorKnee(db: number): void {
-  if (compNode) compNode.knee.value = db;
+  if (compNode) setParam(compNode.knee, db);
   _settings.compressor.knee = db;
   scheduleSave();
 }
 
 export function setCompressorMakeupGain(db: number): void {
-  if (compMakeupGain) compMakeupGain.gain.value = dbToLinear(db);
+  if (compMakeupGain) setParam(compMakeupGain.gain, dbToLinear(db));
   _settings.compressor.makeupGain = db;
   scheduleSave();
 }
@@ -584,7 +590,7 @@ let _stereoWidth = 100;
 
 export function setStereoWidth(width: number): void {
   _stereoWidth = width;
-  if (widSideScale) widSideScale.gain.value = width / 100;
+  if (widSideScale) setParam(widSideScale.gain, width / 100);
   _settings.stereoWidener.width = width;
   scheduleSave();
 }
@@ -596,8 +602,8 @@ export function getStereoWidth(): number {
 // ─── Reverb ───────────────────────────────────────────────────────────────────
 
 export function setReverbWet(wet: number): void {
-  if (reverbWetGain)      reverbWetGain.gain.value      = wet;
-  if (reverbDryPassthrough) reverbDryPassthrough.gain.value = 1 - wet;
+  if (reverbWetGain)        setParam(reverbWetGain.gain,        wet);
+  if (reverbDryPassthrough) setParam(reverbDryPassthrough.gain, 1 - wet);
   _settings.reverb.wet = wet;
   scheduleSave();
 }

@@ -4,6 +4,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { DspCard } from '../DspCard';
 import {
   setStageBypass,
+  getStageBypass,
   setCompressorThreshold,
   setCompressorRatio,
   setCompressorAttack,
@@ -75,30 +76,43 @@ interface Props {
 }
 
 export const CompressorStage = memo(function CompressorStage({ dragHandleProps }: Props) {
-  const s = getDSPSettings().compressor;
+  const init = getDSPSettings().compressor;
+  const [threshold,  setThresholdState]  = useState(init.threshold);
+  const [ratio,      setRatioState]      = useState(init.ratio);
+  const [attack,     setAttackState]     = useState(init.attack);
+  const [release,    setReleaseState]    = useState(init.release);
+  const [knee,       setKneeState]       = useState(init.knee);
+  const [makeupGain, setMakeupGainState] = useState(init.makeupGain);
+  const [bypassed,   setBypassedState]   = useState(() => getStageBypass('compressor'));
 
   return (
     <DspCard
       title="Compressor"
-      bypassed={s.bypassed}
-      onBypassToggle={v => setStageBypass('compressor', v)}
+      bypassed={bypassed}
+      onBypassToggle={v => { setStageBypass('compressor', v); setBypassedState(v); }}
       showBypass
       showDragHandle
       dragHandleProps={dragHandleProps}
     >
       <GRMeter />
-      <DspSlider label="Threshold" value={s.threshold} min={-60} max={0} step={1}
-        onChange={setCompressorThreshold} formatVal={v => `${v.toFixed(0)} dB`} />
-      <DspSlider label="Ratio" value={s.ratio} min={1} max={20} step={0.5}
-        onChange={setCompressorRatio} formatVal={v => `${v.toFixed(1)}:1`} />
-      <DspSlider label="Attack" value={s.attack} min={0} max={1} step={0.001}
-        onChange={setCompressorAttack} formatVal={v => `${(v * 1000).toFixed(0)} ms`} />
-      <DspSlider label="Release" value={s.release} min={0} max={1} step={0.01}
-        onChange={setCompressorRelease} formatVal={v => `${(v * 1000).toFixed(0)} ms`} />
-      <DspSlider label="Knee" value={s.knee} min={0} max={40} step={1}
-        onChange={setCompressorKnee} formatVal={v => `${v.toFixed(0)} dB`} />
-      <DspSlider label="Makeup" value={s.makeupGain} min={0} max={24} step={0.5}
-        onChange={setCompressorMakeupGain} formatVal={v => `+${v.toFixed(1)} dB`} />
+      <DspSlider label="Threshold" value={threshold} min={-60} max={0} step={1}
+        onChange={v => { setCompressorThreshold(v); setThresholdState(v); }}
+        formatVal={v => `${v.toFixed(0)} dB`} />
+      <DspSlider label="Ratio" value={ratio} min={1} max={20} step={0.5}
+        onChange={v => { setCompressorRatio(v); setRatioState(v); }}
+        formatVal={v => `${v.toFixed(1)}:1`} />
+      <DspSlider label="Attack" value={attack} min={0} max={1} step={0.001}
+        onChange={v => { setCompressorAttack(v); setAttackState(v); }}
+        formatVal={v => `${(v * 1000).toFixed(0)} ms`} />
+      <DspSlider label="Release" value={release} min={0} max={1} step={0.01}
+        onChange={v => { setCompressorRelease(v); setReleaseState(v); }}
+        formatVal={v => `${(v * 1000).toFixed(0)} ms`} />
+      <DspSlider label="Knee" value={knee} min={0} max={40} step={1}
+        onChange={v => { setCompressorKnee(v); setKneeState(v); }}
+        formatVal={v => `${v.toFixed(0)} dB`} />
+      <DspSlider label="Makeup" value={makeupGain} min={0} max={24} step={0.5}
+        onChange={v => { setCompressorMakeupGain(v); setMakeupGainState(v); }}
+        formatVal={v => `+${v.toFixed(1)} dB`} />
     </DspCard>
   );
 });

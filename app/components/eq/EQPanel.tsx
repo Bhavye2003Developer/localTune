@@ -261,8 +261,6 @@ export const EQPanel = memo(function EQPanel({
     if (e.key === 'Escape') { setSaving(false); setSaveName(''); }
   }, [handleSave]);
 
-  if (!open) return null;
-
   const activeCount = state.activePresets.length;
   const isFlat = activeCount === 0;
 

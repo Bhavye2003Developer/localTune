@@ -60,7 +60,7 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
   const virtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 52,
+    estimateSize: () => 64,
     overscan: 5,
   });
 
@@ -148,7 +148,7 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   cancelLongPress();
                   openMenu(e.clientX, e.clientY, track.id);
                 }}
-                className="flex items-center gap-2 px-3 cursor-pointer transition-colors"
+                className="flex flex-col justify-center gap-0.5 px-3 cursor-pointer transition-colors"
                 onMouseEnter={e => {
                   if (!isCurrent) (e.currentTarget as HTMLDivElement).style.background = 'var(--s3)';
                 }}
@@ -156,56 +156,74 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   if (!isCurrent) (e.currentTarget as HTMLDivElement).style.background = '';
                 }}
               >
-                {/* Playing indicator */}
-                <div className="w-4 shrink-0 flex items-center justify-center">
-                  {isCurrent && playing ? (
-                    <span className="flex gap-px items-end h-3.5">
-                      {[1, 2, 3].map(i => (
-                        <span
-                          key={i}
-                          className="w-px rounded-full animate-bounce"
-                          style={{
-                            height: `${50 + i * 15}%`,
-                            animationDelay: `${i * 100}ms`,
-                            background: 'var(--green)',
-                          }}
-                        />
-                      ))}
+                {/* Row 1: indicator + title + duration */}
+                <div className="flex items-center gap-2">
+                  <div className="w-4 shrink-0 flex items-center justify-center">
+                    {isCurrent && playing ? (
+                      <span className="flex gap-px items-end h-3.5">
+                        {[1, 2, 3].map(i => (
+                          <span
+                            key={i}
+                            className="w-px rounded-full animate-bounce"
+                            style={{
+                              height: `${50 + i * 15}%`,
+                              animationDelay: `${i * 100}ms`,
+                              background: 'var(--green)',
+                            }}
+                          />
+                        ))}
+                      </span>
+                    ) : isCurrent ? (
+                      <Play size={9} style={{ color: 'var(--a)', fill: 'var(--a)' }} />
+                    ) : null}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="truncate leading-tight"
+                      style={{ color: isCurrent ? 'var(--a)' : 'var(--t1)', fontSize: 11.5, fontWeight: 600 }}
+                    >
+                      {track.title}
+                    </p>
+                    <p className="truncate" style={{ color: 'var(--t2)', fontSize: 9.5, fontWeight: 500 }}>
+                      {track.artist || track.name}
+                    </p>
+                  </div>
+
+                  {track.duration > 0 && (
+                    <span className="shrink-0" style={{ color: 'var(--t2)', fontSize: 9, fontWeight: 400 }}>
+                      {formatTime(track.duration)}
                     </span>
-                  ) : isCurrent ? (
-                    <Play size={9} style={{ color: 'var(--a)', fill: 'var(--a)' }} />
-                  ) : null}
+                  )}
+
+                  {track.error && (
+                    <span
+                      className="px-1 rounded shrink-0"
+                      style={{ color: 'var(--orange)', border: '1px solid var(--orange)', fontSize: 9, fontWeight: 700, opacity: 0.8 }}
+                    >
+                      ERR
+                    </span>
+                  )}
                 </div>
 
-                {/* Title + artist */}
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="truncate leading-tight"
-                    style={{ color: isCurrent ? 'var(--a)' : 'var(--t1)', fontSize: 11.5, fontWeight: 600 }}
-                  >
-                    {track.title}
-                  </p>
-                  <p className="truncate" style={{ color: 'var(--t2)', fontSize: 9.5, fontWeight: 500 }}>
-                    {track.artist || track.name}
-                  </p>
-                </div>
-
-                {/* Duration */}
-                {track.duration > 0 && (
-                  <span className="shrink-0" style={{ color: 'var(--t2)', fontSize: 9, fontWeight: 400 }}>
-                    {formatTime(track.duration)}
-                  </span>
-                )}
-
-                {/* Error badge */}
-                {track.error && (
+                {/* Row 2: chips */}
+                <div className="flex items-center gap-1 pl-6">
                   <span
-                    className="px-1 rounded shrink-0"
-                    style={{ color: 'var(--orange)', border: '1px solid var(--orange)', fontSize: 9, fontWeight: 700, opacity: 0.8 }}
+                    className="px-1.5 py-px rounded"
+                    style={{ color: 'var(--a)', border: '1px solid #f59e0b30', background: '#f59e0b10', fontSize: 7, fontWeight: 700, textTransform: 'uppercase' }}
                   >
-                    ERR
+                    {track.type.split('/')[1]?.toUpperCase() ?? '?'}
                   </span>
-                )}
+                  {(['Key', 'BPM'] as const).map(label => (
+                    <span
+                      key={label}
+                      className="px-1.5 py-px rounded"
+                      style={{ color: 'var(--t3)', border: '1px solid var(--br)', background: 'var(--s3)', fontSize: 7, fontWeight: 500 }}
+                    >
+                      {label} —
+                    </span>
+                  ))}
+                </div>
               </div>
             );
           })}
