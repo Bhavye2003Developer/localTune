@@ -160,7 +160,7 @@ export const PlayerBar = memo(function PlayerBar({
         <button
           onClick={track ? onOpenNowPlaying : undefined}
           disabled={!track}
-          className="flex items-center gap-2 min-w-0 w-44 shrink-0 text-left disabled:cursor-default"
+          className="flex items-center gap-2 min-w-0 w-28 sm:w-44 shrink-0 text-left disabled:cursor-default"
         >
           <div
             className="w-10 h-10 shrink-0 flex items-center justify-center overflow-hidden rounded-md"
