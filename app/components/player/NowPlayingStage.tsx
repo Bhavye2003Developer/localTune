@@ -18,17 +18,7 @@ function fmtBytes(bytes: number) {
   return (bytes / 1_000_000).toFixed(1) + ' MB';
 }
 
-function Chip({ children, accent, color }: { children: React.ReactNode; accent?: boolean; color?: string }) {
-  if (color) {
-    return (
-      <span
-        className="px-2 py-0.5 rounded"
-        style={{ color, border: `1px solid ${color}45`, background: `${color}18`, fontSize: 9, fontWeight: 700, textTransform: 'uppercase' as const }}
-      >
-        {children}
-      </span>
-    );
-  }
+function Chip({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
   return (
     <span
       className="px-2 py-0.5 rounded"
@@ -41,34 +31,6 @@ function Chip({ children, accent, color }: { children: React.ReactNode; accent?:
     </span>
   );
 }
-
-function EnergyBar({ value }: { value: number }) {
-  // value: 0–1
-  const pct = Math.round(value * 100);
-  const color = value > 0.7 ? '#22C55E' : value > 0.4 ? '#F59E0B' : '#38BDF8';
-  return (
-    <div className="flex items-center gap-1.5">
-      <span style={{ color: 'var(--t3)', fontSize: 9, fontWeight: 500, whiteSpace: 'nowrap' }}>Energy</span>
-      <div
-        className="rounded-full overflow-hidden"
-        style={{ width: 48, height: 4, background: 'var(--s5)' }}
-      >
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, background: color }}
-        />
-      </div>
-    </div>
-  );
-}
-
-const MOOD_COLORS: Record<string, string> = {
-  Energetic: '#F97316',
-  Happy:     '#F59E0B',
-  Chill:     '#38BDF8',
-  Melancholic: '#A78BFA',
-  Dark:      '#777777',
-};
 
 
 function StandbyBlock() {
@@ -145,21 +107,7 @@ export function NowPlayingStage() {
           <Chip accent>{fmtLabel(track.type)}</Chip>
           <Chip>{fmtBytes(track.size)}</Chip>
           {track.duration > 0 && <Chip>{formatTime(track.duration)}</Chip>}
-          {track.bpm != null && (
-            <Chip color="#F59E0B">{Math.round(track.bpm)} BPM</Chip>
-          )}
-          {track.camelot && track.musicalKey && (
-            <Chip color="#38BDF8">{track.camelot} · {track.musicalKey}</Chip>
-          )}
-          {track.mood && (
-            <Chip color={MOOD_COLORS[track.mood] ?? '#777777'}>{track.mood}</Chip>
-          )}
         </div>
-
-        {/* Energy bar */}
-        {track.energy != null && (
-          <EnergyBar value={track.energy} />
-        )}
       </div>
     </div>
   );

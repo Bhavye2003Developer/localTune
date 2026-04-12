@@ -1,7 +1,7 @@
 # FineTune V1 — Build Progress
 
 > Spec source: `FineTune_V1_Spec-1.md`
-> Last updated: 2026-04-12 (session 11 — Feature 3 BPM/Key/Mood/Energy analysis)
+> Last updated: 2026-04-12 (session 10 — audit + gap fixes)
 
 ---
 
@@ -39,18 +39,6 @@
 - Added restore-on-mount effect in PlayerProvider — recreates object URLs on session start
 - Added DB version 3 migration (`fileBlobs: 'fileId'` table)
 - Fixed duplicate filtering in `loadFiles` — skips files already in library
-
-### Session 11 — Feature 3: BPM/Key/Mood/Energy analysis (2026-04-12)
-- Installed `essentia.js` package
-- Created `app/lib/analysisWorker.ts` — Web Worker with lazy EssentiaWASM import; exports `buildCamelotKey`, `moodFromFeatures`, `analyseBuffer` for testing; full Camelot wheel lookup; mood heuristic from energy+danceability+key scale
-- Created `app/lib/useAnalysisQueue.ts` — serial background queue; reads file blobs from `db.fileBlobs`, decodes via OfflineAudioContext, posts to Worker; writes results to `db.tracks`; dispatches `UPDATE_TRACK_ANALYSIS`; exposes `{ pending, total }` via `analysisProgress` on context
-- Added Dexie v4 migration — extends `StoredTrack` with `keyScale`, `camelot`, `energy`, `danceability`, `lufs` (no new indexes, no upgrade function needed)
-- Extended `Track` interface with all 8 analysis fields; added `UPDATE_TRACK_ANALYSIS` action + reducer case to playerContext
-- `useAnalysisQueue` mounted inside `PlayerProvider` (has direct dispatch access); `analysisProgress` exposed on context value
-- Restore-on-mount effect now restores analysis fields from Dexie for persisted tracks
-- Updated `NowPlayingStage` — BPM chip (amber), Camelot+key chip (blue), mood chip (colour-coded), energy bar (green/amber/blue by level)
-- Updated `TrackLibrary` header — shows "Analysing X/Y" in amber while queue is active
-- Added `__tests__/analysisWorker.test.ts` (18 cases) and `__tests__/useAnalysisQueue.test.ts` (6 cases); zero regressions
 
 ### Session 10 — Delete feature + codebase audit (2026-04-12)
 - Added `REMOVE_TRACK` action + reducer — resets player if deleting current track
@@ -108,10 +96,6 @@
 | `__tests__/EQPanel.test.tsx` | EQPanel component tests (11 cases) |
 | `__tests__/useKeyboardShortcuts.test.tsx` | Hook unit tests (17 cases) |
 | `__tests__/visualizer.test.tsx` | Visualizer component tests (7 cases) |
-| `app/lib/analysisWorker.ts` | Web Worker — essentia.js WASM BPM/Key/Mood/Energy; exports pure functions for testing |
-| `app/lib/useAnalysisQueue.ts` | Background analysis queue hook; reads blobs, posts to Worker, writes Dexie, dispatches results |
-| `__tests__/analysisWorker.test.ts` | Analysis worker pure function tests (18 cases) |
-| `__tests__/useAnalysisQueue.test.ts` | Analysis queue hook tests (6 cases) |
 | `vitest.config.ts` | Vitest config |
 | `vitest.setup.ts` | jest-dom setup |
 
@@ -244,12 +228,12 @@
 
 ---
 
-### Step 8 — Now Playing Metadata Display ✅
+### Step 8 — Now Playing Metadata Display 🔶
 
 - [x] Full-screen Now Playing panel (`NowPlayingPanel.tsx`, triggered by album-art click)
 - [x] Large album art centered (160×160, with Music fallback icon)
 - [x] Dynamic background gradient from `color-thief-browser` dominant color
-- [x] BPM chip, Camelot key badge, energy bar, mood chip (Feature 3 — essentia.js)
+- [ ] BPM chip, Camelot key badge, energy dot, mood tag (requires Feature 3 — essentia.js)
 - [x] Format badge, sample rate, file size
 
 ---
@@ -293,13 +277,13 @@
 
 ---
 
-### Feature 3 — BPM + Key + Mood Analysis ✅
+### Feature 3 — BPM + Key + Mood Analysis ❌
 
-- [x] `essentia.js` WASM in a Web Worker (`app/lib/analysisWorker.ts`)
-- [x] Per-track: BPM, musical key (+ Camelot), energy, danceability, mood, LUFS
-- [x] Background analysis queue with progress indicator (`useAnalysisQueue` → `analysisProgress`)
-- [x] Results displayed as chips on NowPlayingStage (BPM, Camelot, mood, energy bar)
-- [x] Cache results in Dexie v4 keyed by `fileId`; restored on session reload
+- [ ] `essentia.js` WASM in a Web Worker
+- [ ] Per-track: BPM, musical key, energy, danceability, mood, LUFS
+- [ ] Background analysis queue with progress indicator
+- [ ] Results displayed as chips on track rows
+- [ ] Cache results in Dexie keyed by `fileId`
 
 ---
 
@@ -446,7 +430,7 @@ All shortcuts listed in spec — none implemented yet.
 | `@dnd-kit/core` + `@dnd-kit/sortable` | Queue drag-reorder | ✅ |
 | `vitest` + `@testing-library/react` | Test framework | ✅ |
 | `soundtouch-ts` | Pitch-preserving speed | ❌ not installed |
-| `essentia.js` | BPM/key/mood analysis | ✅ |
+| `essentia.js` | BPM/key/mood analysis | ❌ not installed |
 | `peerjs` | P2P sync rooms | ❌ not installed |
 | `ably` | Global chat | ❌ not installed |
 | `@emoji-mart/react` | Emoji picker | ❌ not installed |

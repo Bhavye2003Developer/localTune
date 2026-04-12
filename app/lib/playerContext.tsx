@@ -10,7 +10,6 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { useAnalysisQueue, type AnalysisAction } from './useAnalysisQueue';
 import jsmediatags from 'jsmediatags';
 import { toast } from 'sonner';
 import { db } from './db';
@@ -39,15 +38,6 @@ export interface Track {
   coverUrl: string;
   duration: number;
   error?: boolean;
-  // Analysis fields — populated by useAnalysisQueue after essentia.js run
-  bpm?: number;
-  musicalKey?: string;
-  keyScale?: string;
-  camelot?: string;
-  energy?: number;
-  danceability?: number;
-  mood?: string;
-  lufs?: number;
 }
 
 // ─── Shuffle / loop modes ─────────────────────────────────────────────────────
@@ -98,7 +88,6 @@ export const INITIAL: PlayerState = {
 type Action =
   | { type: 'ADD_TRACKS'; tracks: Track[] }
   | { type: 'UPDATE_TRACK'; id: string; patch: Partial<Track> }
-  | { type: 'UPDATE_TRACK_ANALYSIS'; id: string; analysis: { bpm: number; key: string; keyScale: string; camelot: string; energy: number; danceability: number; mood: string; lufs: number } }
   | { type: 'REMOVE_TRACK'; id: string }
   | { type: 'PLAY_NOW'; id: string }
   | { type: 'PLAY_NEXT'; id: string }
@@ -141,16 +130,6 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
       return {
         ...state,
         tracks: state.tracks.map(t => t.id === action.id ? { ...t, ...action.patch } : t),
-      };
-
-    case 'UPDATE_TRACK_ANALYSIS':
-      return {
-        ...state,
-        tracks: state.tracks.map(t =>
-          t.id === action.id
-            ? { ...t, bpm: action.analysis.bpm, musicalKey: action.analysis.key, keyScale: action.analysis.keyScale, camelot: action.analysis.camelot, energy: action.analysis.energy, danceability: action.analysis.danceability, mood: action.analysis.mood, lufs: action.analysis.lufs }
-            : t
-        ),
       };
 
     case 'REMOVE_TRACK': {
@@ -483,7 +462,6 @@ export interface PlayerContextValue {
   cycleLoopMode: () => void;
   setEQBandGain: (index: number, gainDb: number) => void;
   setEQBypass: (on: boolean) => void;
-  analysisProgress: { pending: number; total: number };
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -495,13 +473,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const getState = () => stateRef.current;
-
-  // ── Analysis queue — essentia.js BPM/Key/Mood background processing ────────
-  const analysisDispatch = useCallback(
-    (action: AnalysisAction) => dispatch(action as Parameters<typeof dispatch>[0]),
-    [],
-  );
-  const analysisProgress = useAnalysisQueue(state.tracks, analysisDispatch);
 
   // ── Restore persisted files from IndexedDB on mount ───────────────────────
   useEffect(() => {
@@ -530,14 +501,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           url: URL.createObjectURL(blob),
           coverUrl: '',
           duration: st.duration,
-          bpm: st.bpm,
-          musicalKey: st.musicalKey,
-          keyScale: st.keyScale,
-          camelot: st.camelot,
-          energy: st.energy,
-          danceability: st.danceability,
-          mood: st.mood,
-          lufs: st.lufs,
         });
       }
 
@@ -831,7 +794,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setLoopA, setLoopB, setLoopAAt, setLoopBAt, toggleLoop, clearLoop,
       cycleShuffle, cycleLoopMode,
       setEQBandGain: setEQBandGainCb, setEQBypass: setEQBypassCb,
-      analysisProgress,
     }}>
       {children}
     </PlayerContext.Provider>

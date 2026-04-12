@@ -10,15 +10,9 @@ export interface StoredTrack {
   size: number;
   type: string;
   duration: number;
-  // Analysis fields — written by useAnalysisQueue after essentia.js WASM run
   bpm?: number;
   musicalKey?: string;
-  keyScale?: string;
-  camelot?: string;
-  energy?: number;
-  danceability?: number;
   mood?: string;
-  lufs?: number;
 }
 
 export interface StoredFileBlob {
@@ -55,14 +49,6 @@ export class FineTuneDB extends Dexie {
       dspSettings: 'id',
     });
     this.version(3).stores({
-      tracks:      '++id, fileId, name',
-      eqPresets:   '++id, name',
-      dspSettings: 'id',
-      fileBlobs:   'fileId',
-    });
-    // v4 — adds keyScale, camelot, energy, danceability, lufs to StoredTrack.
-    // No new indexes needed; optional fields deserialise as undefined on old rows.
-    this.version(4).stores({
       tracks:      '++id, fileId, name',
       eqPresets:   '++id, name',
       dspSettings: 'id',
