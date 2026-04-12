@@ -5,6 +5,7 @@ interface ShortcutOpts {
   onOpenShortcuts?: () => void;
   focusSearch?: () => void;
   onToggleEQ?: () => void;
+  onToggleDSP?: () => void;
 }
 
 export function useKeyboardShortcuts(opts: ShortcutOpts = {}) {
@@ -62,6 +63,9 @@ export function useKeyboardShortcuts(opts: ShortcutOpts = {}) {
           break;
         case 'e':
           optsRef.current.onToggleEQ?.();
+          break;
+        case 'd':
+          optsRef.current.onToggleDSP?.();
           break;
         case 'f':
           if (document.fullscreenElement) {

@@ -20,6 +20,8 @@ interface PlayerBarProps {
   onOpenShortcuts: () => void;
   eqOpen: boolean;
   onToggleEQ: () => void;
+  dspOpen: boolean;
+  onToggleDSP: () => void;
 }
 
 function LoopIcon({ mode }: { mode: LoopMode }) {
@@ -58,6 +60,7 @@ function NxBtn({ onClick, title, active, activeRed, children, disabled }: {
 export const PlayerBar = memo(function PlayerBar({
   libOpen, onToggleLib, queueOpen, onToggleQueue,
   onOpenNowPlaying, onOpenShortcuts, eqOpen, onToggleEQ,
+  dspOpen, onToggleDSP,
 }: PlayerBarProps) {
   const {
     state,
@@ -421,6 +424,10 @@ export const PlayerBar = memo(function PlayerBar({
 
           <NxBtn onClick={onToggleEQ} title="EQ (E)" active={eqOpen} activeRed>
             <SlidersHorizontal size={13} />
+          </NxBtn>
+
+          <NxBtn onClick={onToggleDSP} title="DSP chain (D)" active={dspOpen}>
+            <span className="font-mono text-[10px] font-bold">DSP</span>
           </NxBtn>
 
           <button onClick={onOpenShortcuts} title="Keyboard shortcuts (?)"
