@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import type { AnalysisResult } from '../app/lib/analysisWorker';
+import type { AnalysisResult } from '../app/types/analysis';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 

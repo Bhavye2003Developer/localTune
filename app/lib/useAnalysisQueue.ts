@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { db } from './db';
 import type { Track } from './playerContext';
-import type { AnalysisResult } from './analysisWorker';
+import type { AnalysisResult } from '../types/analysis';
 
 export interface AnalysisAction {
   type: 'UPDATE_TRACK_ANALYSIS';
