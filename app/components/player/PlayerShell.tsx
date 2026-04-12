@@ -23,7 +23,7 @@ function MarksPanel() {
   const { duration, loopA, loopB, loopActive } = state;
 
   return (
-    <div className="flex flex-col gap-3 px-4 py-3">
+    <div className="flex flex-col gap-3 px-4 pt-3 pb-5">
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={setLoopA}
@@ -72,7 +72,7 @@ function MarksPanel() {
           </button>
         )}
       </div>
-      <p style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 500 }}>
+      <p style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 500, lineHeight: 1.6, whiteSpace: 'normal', overflowWrap: 'break-word' }}>
         Set A/B markers using the A/B buttons in the player bar or right-click the seek bar.
       </p>
     </div>
