@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Play, X, Search } from 'lucide-react';
+import { Play, Trash2, Search, X } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
 
 export interface TrackLibraryHandle {
@@ -10,7 +10,7 @@ export interface TrackLibraryHandle {
 }
 
 export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary(_, ref) {
-  const { state, playNow, playNext, addToQueue } = usePlayer();
+  const { state, playNow, playNext, addToQueue, removeTrack } = usePlayer();
   const { tracks, queue, queuePos, playing } = state;
   const currentId = queue[queuePos] ?? null;
   const parentRef = useRef<HTMLDivElement>(null);
@@ -204,6 +204,22 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                       ERR
                     </span>
                   )}
+
+                  {/* Delete — desktop hover only */}
+                  <button
+                    className="shrink-0 flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-100 transition-opacity touch-manipulation"
+                    style={{ color: 'var(--t3)' }}
+                    onPointerDown={e => {
+                      e.stopPropagation();
+                      cancelLongPress();
+                      removeTrack(track.id);
+                    }}
+                    onMouseEnter={e => { (e.currentTarget).style.color = 'var(--orange)'; }}
+                    onMouseLeave={e => { (e.currentTarget).style.color = 'var(--t3)'; }}
+                    title="Delete track"
+                  >
+                    <Trash2 size={11} />
+                  </button>
                 </div>
 
                 {/* Row 2: chips */}
@@ -233,9 +249,9 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
           }}
         >
           {[
-            { label: 'Play now',     action: () => { playNow(menu.trackId);    closeMenu(); } },
-            { label: 'Play next',    action: () => { playNext(menu.trackId);   closeMenu(); } },
-            { label: 'Add to queue', action: () => { addToQueue(menu.trackId); closeMenu(); } },
+            { label: 'Play now',     action: () => { playNow(menu.trackId);    closeMenu(); }, destructive: false },
+            { label: 'Play next',    action: () => { playNext(menu.trackId);   closeMenu(); }, destructive: false },
+            { label: 'Add to queue', action: () => { addToQueue(menu.trackId); closeMenu(); }, destructive: false },
           ].map(({ label, action }) => (
             <button
               key={label}
@@ -248,6 +264,18 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
               {label}
             </button>
           ))}
+          {/* Separator */}
+          <div style={{ height: 1, background: 'var(--br)', margin: '2px 0' }} />
+          {/* Delete — destructive */}
+          <button
+            className="block w-full px-4 py-2.5 text-left transition-colors whitespace-nowrap touch-manipulation"
+            style={{ color: 'var(--orange)', fontSize: 11, fontWeight: 600 }}
+            onPointerDown={e => { e.stopPropagation(); removeTrack(menu.trackId); closeMenu(); }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.background = 'var(--s3)'; }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.background = ''; }}
+          >
+            Delete
+          </button>
         </div>
       )}
     </div>

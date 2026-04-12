@@ -88,6 +88,7 @@ export const INITIAL: PlayerState = {
 type Action =
   | { type: 'ADD_TRACKS'; tracks: Track[] }
   | { type: 'UPDATE_TRACK'; id: string; patch: Partial<Track> }
+  | { type: 'REMOVE_TRACK'; id: string }
   | { type: 'PLAY_NOW'; id: string }
   | { type: 'PLAY_NEXT'; id: string }
   | { type: 'ADD_TO_QUEUE'; id: string }
@@ -130,6 +131,23 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
         ...state,
         tracks: state.tracks.map(t => t.id === action.id ? { ...t, ...action.patch } : t),
       };
+
+    case 'REMOVE_TRACK': {
+      const newTracks = state.tracks.filter(t => t.id !== action.id);
+      const newQueue  = state.queue.filter(id => id !== action.id);
+      const currentId = state.queue[state.queuePos] ?? null;
+      if (currentId === action.id) {
+        // Deleted the playing track — full reset
+        return { ...state, tracks: newTracks, queue: [], queuePos: -1, playing: false, position: 0, duration: 0 };
+      }
+      // Not playing — keep pointer correct
+      const removedAt  = state.queue.indexOf(action.id);
+      let newQueuePos  = state.queuePos;
+      if (removedAt !== -1 && removedAt < state.queuePos) newQueuePos--;
+      if (newQueue.length === 0) newQueuePos = -1;
+      else newQueuePos = Math.min(newQueuePos, newQueue.length - 1);
+      return { ...state, tracks: newTracks, queue: newQueue, queuePos: newQueuePos };
+    }
 
     case 'PLAY_NOW': {
       const currentId = state.queue[state.queuePos];
@@ -420,6 +438,7 @@ export interface PlayerContextValue {
   state: PlayerState;
   analyserNode: AnalyserNode | null;
   loadFiles: (files: FileList | File[]) => void;
+  removeTrack: (id: string) => void;
   playNow: (id: string) => void;
   playNext: (id: string) => void;
   addToQueue: (id: string) => void;
@@ -663,6 +682,29 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
+  const removeTrack = useCallback((id: string) => {
+    const track = stateRef.current.tracks.find(t => t.id === id);
+    const currentId = stateRef.current.queue[stateRef.current.queuePos] ?? null;
+
+    // Stop audio if this was the playing track
+    if (currentId === id && audioEl) {
+      audioEl.pause();
+      audioEl.src = '';
+    }
+
+    // Revoke blob URLs to free memory
+    if (track) {
+      if (track.url.startsWith('blob:'))      URL.revokeObjectURL(track.url);
+      if (track.coverUrl?.startsWith('blob:')) URL.revokeObjectURL(track.coverUrl);
+    }
+
+    dispatch({ type: 'REMOVE_TRACK', id });
+
+    // Remove from IndexedDB
+    db.tracks.where('fileId').equals(id).delete().catch(() => {});
+    db.fileBlobs.where('fileId').equals(id).delete().catch(() => {});
+  }, []);
+
   const playNow = useCallback((id: string) => {
     const wasNull = !audioEl;
     ensureAudio();
@@ -745,6 +787,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       state,
       analyserNode: _analyserNode,
       loadFiles,
+      removeTrack,
       playNow, playNext, addToQueue, removeFromQueue, clearQueue, reorderQueue,
       togglePlay, seek, next, prev,
       setVolume, toggleMute, setSpeed,
