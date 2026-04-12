@@ -243,20 +243,6 @@ export const PlayerBar = memo(function PlayerBar({
         {/* Right: secondary controls */}
         <div className="flex items-center gap-0 shrink-0">
 
-          {/* Analysis chips — placeholders until Feature 3 ships */}
-          <span
-            className="hidden sm:flex items-center px-2 h-6 rounded mr-1"
-            style={{ color: 'var(--t3)', border: '1px solid var(--br)', background: 'var(--s3)', fontSize: 8, fontWeight: 500 }}
-          >
-            Key —
-          </span>
-          <span
-            className="hidden sm:flex items-center px-2 h-6 rounded mr-1"
-            style={{ color: 'var(--t3)', border: '1px solid var(--br)', background: 'var(--s3)', fontSize: 8, fontWeight: 500 }}
-          >
-            BPM —
-          </span>
-
           {/* Speed */}
           <button onClick={nextSpeed} title={`Speed: ${speed}×`}
             className="hidden sm:flex items-center justify-center h-10 px-2 text-[10px] transition-colors min-w-10 shrink-0 rounded-lg"
