@@ -206,8 +206,8 @@ function PlayerInner() {
 
   return (
     <div
-      className="relative w-screen h-screen overflow-hidden flex flex-col"
-      style={{ background: 'var(--bg)' }}
+      className="relative w-screen overflow-hidden flex flex-col"
+      style={{ height: '100dvh', background: 'var(--bg)' }}
     >
 
       {/* ══════════════════════════════════════════

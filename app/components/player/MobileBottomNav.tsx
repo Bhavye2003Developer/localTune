@@ -27,7 +27,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({ activeTab, onSwit
           <button
             key={id}
             onClick={() => onSwitch(id)}
-            className="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-colors"
+            className="relative flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-colors"
             style={{ minHeight: 52 }}
           >
             <Icon
