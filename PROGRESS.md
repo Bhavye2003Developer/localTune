@@ -1,7 +1,7 @@
 # FineTune V1 — Build Progress
 
 > Spec source: `FineTune_V1_Spec-1.md`
-> Last updated: 2026-04-05 (session 7 — EQ multi-preset + saved configs)
+> Last updated: 2026-04-12 (session 10 — audit + gap fixes)
 
 ---
 
@@ -14,6 +14,43 @@
 | ❌ | Not started |
 
 ---
+
+## Recent Sessions
+
+### Session 8 — Mobile redesign + UI cleanup (2026-04-12)
+- Replaced 3-section desktop layout with tabbed mobile UX (Library / Queue / Player)
+- Added `MobileBottomNav.tsx` — 3-tab bottom nav with active indicator line
+- Added `InlineQueue.tsx` — replaces QueueSidebar in center column and mobile Queue tab
+- Added `MiniPlayerStrip.tsx` — persistent mini player on Library/Queue tabs (Prev + Play + Next)
+- Added `NowPlayingStage.tsx` — vinyl platter + track info above queue in desktop center column
+- Added `VinylPlatter.tsx` — spinning vinyl animation component
+- Added `TabStrip.tsx` — EQ / DSP / Marks toggle strip
+- Removed Info tab from TabStrip (nothing to show yet)
+- Removed Key/BPM/Mood placeholder chips from TrackLibrary, NowPlayingStage, PlayerBar
+- Removed SmartPlaylists "coming soon" section from PlayerShell
+- Fixed mobile PlayerBar loop button hidden (left section `w-28 sm:w-44`)
+- Removed all scrollbars globally (globals.css: `scrollbar-width: none`)
+- Fixed `QueueSidebar.tsx` is now dead code (InlineQueue replaced it) — kept file
+
+### Session 9 — Loop + Marks + persistence fixes (2026-04-12)
+- Fixed loop not working on mobile — `onEnded` now uses `setTimeout(0)` before `play()`
+- Fixed Marks panel text clipping — switched to pure inline styles with `width:100%` + `boxSizing:border-box`
+- Added file persistence via IndexedDB blob storage (150 MB cap, `db.fileBlobs` table)
+- Added restore-on-mount effect in PlayerProvider — recreates object URLs on session start
+- Added DB version 3 migration (`fileBlobs: 'fileId'` table)
+- Fixed duplicate filtering in `loadFiles` — skips files already in library
+
+### Session 10 — Delete feature + codebase audit (2026-04-12)
+- Added `REMOVE_TRACK` action + reducer — resets player if deleting current track
+- Added `removeTrack` callback — stops audio, revokes blob URLs, cleans IndexedDB
+- Added hover trash icon in TrackLibrary rows (desktop `group-hover:opacity-100`)
+- Added "Delete" option in TrackLibrary right-click / long-press context menu
+- **Bug fixes found in audit:**
+  - TrackLibrary: `group` class was missing on row div → trash button was permanently hidden
+  - InlineQueue: remove button was `opacity-0` on mobile → changed to `opacity-100 sm:opacity-0 sm:group-hover:opacity-100`
+  - KeyboardShortcutsOverlay: 'D → Toggle DSP' was missing from SHORTCUTS list
+  - PlayerBar: seek bar right-click A/B context menu missing (referenced in MarksPanel help text) → added
+  - playerContext.tsx: `BLOB_STORAGE_LIMIT` const was declared before import block → moved after imports
 
 ## File Inventory
 
@@ -36,7 +73,13 @@
 | `app/components/visualizer/VisualizerLoader.tsx` | `'use client'` wrapper with `next/dynamic` ssr:false |
 | `app/components/visualizer/VisualizerContainer.tsx` | Canvas + key picker + album color extraction + Bloom pass |
 | `app/components/visualizer/NebulaScene.tsx` | GLSL particle system — 4-shape morphing, audio-reactive, `uColorTint` uniform |
-| `app/components/player/QueueSidebar.tsx` | dnd-kit sortable queue sidebar |
+| `app/components/player/QueueSidebar.tsx` | dnd-kit sortable queue sidebar — **dead code**, replaced by InlineQueue |
+| `app/components/player/InlineQueue.tsx` | Inline queue list with dnd-kit reorder; used in desktop center + mobile Queue tab |
+| `app/components/player/MobileBottomNav.tsx` | Mobile 3-tab bottom nav (Library / Queue / Player) |
+| `app/components/player/MiniPlayerStrip.tsx` | Persistent mini player strip on Library/Queue mobile tabs |
+| `app/components/player/NowPlayingStage.tsx` | Now Playing section — vinyl platter + track info + chips |
+| `app/components/player/VinylPlatter.tsx` | Spinning vinyl record animation component |
+| `app/components/player/TabStrip.tsx` | EQ / DSP / Marks toggle tab strip |
 | `app/lib/eqPresets.ts` | Band/EQState interfaces, INITIAL_BANDS (10 bands), BUILTIN_PRESETS (8), eqReducer |
 | `app/components/eq/EQCurve.tsx` | SVG EQ curve — 512 log-spaced points, mathematical biquad transfer function, draggable dots |
 | `app/components/eq/EQPanel.tsx` | EQ drawer shell — useReducer, bypass toggle, preset chips, Dexie save |
@@ -138,6 +181,7 @@
 - [x] Clear loop points button
 - [x] A-B region highlight on progress bar
 - [x] A and B vertical marker lines on progress bar
+- [x] Right-click progress bar → context menu to set A or B at clicked timestamp
 
 ---
 

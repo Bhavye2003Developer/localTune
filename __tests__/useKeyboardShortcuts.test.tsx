@@ -29,7 +29,7 @@ describe('useKeyboardShortcuts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(playerContext.usePlayer).mockReturnValue(mockActions as ReturnType<typeof playerContext.usePlayer>);
+    vi.mocked(playerContext.usePlayer).mockReturnValue(mockActions as unknown as ReturnType<typeof playerContext.usePlayer>);
     vi.mocked(playerContext.getAudioEl).mockReturnValue(mockAudioEl);
   });
 
@@ -131,7 +131,7 @@ describe('useKeyboardShortcuts — new shortcuts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(playerContext.usePlayer).mockReturnValue(mockActions as ReturnType<typeof playerContext.usePlayer>);
+    vi.mocked(playerContext.usePlayer).mockReturnValue(mockActions as unknown as ReturnType<typeof playerContext.usePlayer>);
     vi.mocked(playerContext.getAudioEl).mockReturnValue(mockAudioEl);
   });
 

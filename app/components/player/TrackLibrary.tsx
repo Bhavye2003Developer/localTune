@@ -148,7 +148,7 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   cancelLongPress();
                   openMenu(e.clientX, e.clientY, track.id);
                 }}
-                className="flex flex-col justify-center gap-0.5 px-3 cursor-pointer transition-colors"
+                className="group flex flex-col justify-center gap-0.5 px-3 cursor-pointer transition-colors"
                 onMouseEnter={e => {
                   if (!isCurrent) (e.currentTarget as HTMLDivElement).style.background = 'var(--s3)';
                 }}

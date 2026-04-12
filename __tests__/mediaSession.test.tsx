@@ -18,7 +18,7 @@ vi.mock('../app/lib/db', () => ({
   },
 }));
 
-const mockJsmediatags = vi.fn((_file: unknown, { onError }: { onError: () => void }) => onError());
+const mockJsmediatags = vi.fn((_file: unknown, { onSuccess, onError }: { onSuccess?: (tag: unknown) => void; onError?: () => void }) => { onError?.(); });
 
 vi.mock('jsmediatags', () => ({
   default: {
@@ -80,11 +80,11 @@ class MockAudio {
 async function renderWithTrack(coverUrl = '') {
   // Patch jsmediatags to return metadata (including optional coverUrl)
   mockJsmediatags.mockImplementation(
-    (_file: unknown, { onSuccess }: { onSuccess: (tag: unknown) => void }) => {
+    (_file: unknown, { onSuccess }: { onSuccess?: (tag: unknown) => void; onError?: () => void }) => {
       const picture = coverUrl
         ? { data: [0x89, 0x50], format: 'image/jpeg' }
         : undefined;
-      onSuccess({ tags: { title: 'Test Song', artist: 'Test Artist', album: 'Test Album', picture } });
+      onSuccess?.({ tags: { title: 'Test Song', artist: 'Test Artist', album: 'Test Album', picture } });
     }
   );
 

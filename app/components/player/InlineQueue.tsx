@@ -94,7 +94,7 @@ function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, 
       )}
 
       <button
-        className="shrink-0 flex items-center justify-center w-6 h-6 rounded transition-colors opacity-0 group-hover:opacity-100 touch-manipulation"
+        className="shrink-0 flex items-center justify-center w-6 h-6 rounded transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 touch-manipulation"
         style={{ color: 'var(--t3)' }}
         onClick={e => { e.stopPropagation(); onRemove(pos); }}
         onMouseEnter={e => { (e.currentTarget).style.color = 'var(--orange)'; }}

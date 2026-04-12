@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useEffect, memo, type PointerEvent } from 'react';
+import React, { useCallback, useRef, useEffect, memo, type PointerEvent } from 'react';
 import {
   SkipBack, SkipForward, Play, Pause,
   Volume2, VolumeX, Shuffle, Repeat, Repeat1,
@@ -55,6 +55,11 @@ export const PlayerBar = memo(function PlayerBar({
     setLoopA, setLoopB, setLoopAAt, setLoopBAt, toggleLoop, clearLoop,
     cycleShuffle, cycleLoopMode,
   } = usePlayer();
+
+  const [seekCtxMenu, setSeekCtxMenu] = React.useState<{ visible: boolean; x: number; y: number; time: number }>({
+    visible: false, x: 0, y: 0, time: 0,
+  });
+  const closeSeekCtx = useCallback(() => setSeekCtxMenu(m => ({ ...m, visible: false })), []);
 
   const {
     tracks, queue, queuePos, playing,
@@ -139,6 +144,23 @@ export const PlayerBar = memo(function PlayerBar({
     if (!el) return;
     seek(e.key === 'ArrowRight' ? el.currentTime + 5 : Math.max(0, el.currentTime - 5));
   }, [seek]);
+
+  const onSeekBarContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!progressRef.current || !duration) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const time = ratio * duration;
+    const clampedX = Math.min(e.clientX, window.innerWidth - 148);
+    const clampedY = Math.min(e.clientY, window.innerHeight - 88);
+    setSeekCtxMenu({ visible: true, x: clampedX, y: clampedY, time });
+  }, [duration]);
+
+  useEffect(() => {
+    if (!seekCtxMenu.visible) return;
+    window.addEventListener('pointerdown', closeSeekCtx);
+    return () => window.removeEventListener('pointerdown', closeSeekCtx);
+  }, [seekCtxMenu.visible, closeSeekCtx]);
 
   const pct      = duration > 0 ? (position / duration) * 100 : 0;
   const loopAPct = loopA !== null && duration > 0 ? (loopA / duration) * 100 : null;
@@ -350,6 +372,7 @@ export const PlayerBar = memo(function PlayerBar({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onKeyDown={onSeekBarKeyDown}
+          onContextMenu={onSeekBarContextMenu}
         >
           <div className="relative h-[3px] group-hover:h-[4px] transition-all" style={{ background: 'var(--s5)' }}>
             {/* A-B region */}
@@ -386,6 +409,30 @@ export const PlayerBar = memo(function PlayerBar({
           {formatTime(duration)}
         </span>
       </div>
+
+      {/* ── Seek bar A/B context menu ── */}
+      {seekCtxMenu.visible && (
+        <div
+          className="fixed z-50 py-1 shadow-xl rounded-lg overflow-hidden"
+          style={{ left: seekCtxMenu.x, top: seekCtxMenu.y, background: 'var(--s2)', border: '1px solid var(--br)' }}
+        >
+          {[
+            { label: `Set A — ${formatTime(seekCtxMenu.time)}`, action: () => { setLoopAAt(seekCtxMenu.time); closeSeekCtx(); } },
+            { label: `Set B — ${formatTime(seekCtxMenu.time)}`, action: () => { setLoopBAt(seekCtxMenu.time); closeSeekCtx(); } },
+          ].map(({ label, action }) => (
+            <button
+              key={label}
+              className="block w-full px-4 py-2.5 text-left transition-colors whitespace-nowrap touch-manipulation"
+              style={{ color: 'var(--t2)', fontSize: 11, fontWeight: 600 }}
+              onPointerDown={e => { e.stopPropagation(); action(); }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--t1)'; (e.target as HTMLElement).style.background = 'var(--s3)'; }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--t2)'; (e.target as HTMLElement).style.background = ''; }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 });

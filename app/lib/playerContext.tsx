@@ -13,8 +13,6 @@ import {
 import jsmediatags from 'jsmediatags';
 import { toast } from 'sonner';
 import { db } from './db';
-
-const BLOB_STORAGE_LIMIT = 150 * 1024 * 1024; // 150 MB
 import {
   initDSP,
   loadDSPSettings,
@@ -23,6 +21,8 @@ import {
   setEQBypass as dspSetEQBypass,
   setReplayGain,
 } from './dsp';
+
+const BLOB_STORAGE_LIMIT = 150 * 1024 * 1024; // 150 MB
 
 // ─── Track type ───────────────────────────────────────────────────────────────
 
