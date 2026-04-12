@@ -81,22 +81,6 @@ function MarksPanel() {
 
 // ─── Smart Playlists placeholder ─────────────────────────────────────────────
 
-function SmartPlaylistsPlaceholder() {
-  return (
-    <div
-      className="shrink-0"
-      style={{ borderTop: '1px solid var(--br)', padding: '8px 14px' }}
-    >
-      <p style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        Smart Playlists
-      </p>
-      <p className="mt-1" style={{ color: 'var(--t3)', fontSize: 10, fontWeight: 500 }}>
-        Requires analysis — coming soon
-      </p>
-    </div>
-  );
-}
-
 // ─── Panel stack — tab panels ─────────────────────────────────────────────────
 
 interface PanelStackProps {
@@ -230,7 +214,6 @@ function PlayerInner() {
           </div>
           <div className="shrink-0"><FileDropZone /></div>
           <TrackLibrary ref={searchRef} />
-          <SmartPlaylistsPlaceholder />
         </div>
 
         {/* Center column */}

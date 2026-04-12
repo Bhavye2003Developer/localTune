@@ -214,15 +214,6 @@ export const TrackLibrary = forwardRef<TrackLibraryHandle>(function TrackLibrary
                   >
                     {track.type.split('/')[1]?.toUpperCase() ?? '?'}
                   </span>
-                  {(['Key', 'BPM'] as const).map(label => (
-                    <span
-                      key={label}
-                      className="px-1.5 py-px rounded"
-                      style={{ color: 'var(--t3)', border: '1px solid var(--br)', background: 'var(--s3)', fontSize: 7, fontWeight: 500 }}
-                    >
-                      {label} —
-                    </span>
-                  ))}
                 </div>
               </div>
             );
