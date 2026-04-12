@@ -320,7 +320,7 @@ export const PlayerBar = memo(function PlayerBar({
           <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}
             className="hidden sm:flex items-center justify-center w-10 h-10 transition-colors shrink-0"
             style={{ color: 'var(--t2)' }}>
-            {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+            {(muted || volume === 0) ? <VolumeX size={13} /> : <Volume2 size={13} />}
           </button>
 
           {/* Volume slider */}
