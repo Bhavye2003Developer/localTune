@@ -59,7 +59,7 @@ const BandSliderCol = memo(function BandSliderCol({
   const fillFromFrac = Math.min(gainFrac, centerFrac);
   const fillToFrac   = Math.max(gainFrac, centerFrac);
   const hasGain  = band.gain !== 0;
-  const gainColor = band.gain >= 0 ? 'var(--nx-cyan)' : 'var(--nx-red)';
+  const gainColor = 'var(--a)';
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (bypass) return;
@@ -102,7 +102,7 @@ const BandSliderCol = memo(function BandSliderCol({
         className="font-mono leading-none"
         style={{
           fontSize: 8,
-          color: hasGain ? gainColor : 'var(--nx-text-dim)',
+          color: hasGain ? gainColor : 'var(--t3)',
           transition: 'color 0.1s',
         }}
       >
@@ -127,7 +127,7 @@ const BandSliderCol = memo(function BandSliderCol({
             bottom: SLIDER_INSET,
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(0,212,255,0.1)',
+            background: 'var(--s5)',
           }}
         />
 
@@ -156,7 +156,7 @@ const BandSliderCol = memo(function BandSliderCol({
             left: '50%',
             transform: 'translateX(-50%)',
             top: SLIDER_INSET + SLIDER_INNER_H / 2,
-            background: 'rgba(0,212,255,0.25)',
+            background: 'rgba(255,255,255,0.15)',
           }}
         />
 
@@ -170,11 +170,11 @@ const BandSliderCol = memo(function BandSliderCol({
             top: SLIDER_INSET + gainFrac * SLIDER_INNER_H - 4,
             transform: 'translateX(-50%) rotate(45deg)',
             background: active
-              ? 'var(--nx-red)'
+              ? 'var(--a)'
               : hasGain
                 ? gainColor
-                : 'var(--nx-bg-raised)',
-            border: `1.5px solid ${active ? 'var(--nx-red)' : '#00d4ff'}`,
+                : 'var(--s2)',
+            border: `1.5px solid ${active ? 'var(--a)' : 'rgba(245,158,11,0.4)'}`,
             transition: active ? 'none' : 'background 0.1s',
           }}
         />
@@ -183,7 +183,7 @@ const BandSliderCol = memo(function BandSliderCol({
       {/* Frequency label */}
       <span
         className="font-mono leading-none"
-        style={{ fontSize: 8, color: 'var(--nx-text-dim)' }}
+        style={{ fontSize: 8, color: 'var(--t3)' }}
       >
         {freqLabel(band.freq)}
       </span>
@@ -205,7 +205,7 @@ const BandSliders = memo(function BandSliders({
   return (
     <div
       className="flex gap-0 px-2 py-1.5 shrink-0 border-t"
-      style={{ borderColor: 'var(--nx-border)' }}
+      style={{ borderColor: 'var(--br)' }}
     >
       {bands.map((band, i) => (
         <BandSliderCol key={i} band={band} index={i} bypass={bypass} dispatch={dispatch} />
@@ -272,55 +272,52 @@ export const EQPanel = memo(function EQPanel({
       {/* ── Header Row 1: label + action buttons ── */}
       <div
         className="flex items-center gap-2 px-3 pt-2 pb-1.5 shrink-0"
-        style={{ borderBottom: '1px solid rgba(0,212,255,0.06)' }}
+        style={{ borderBottom: '1px solid var(--br)' }}
       >
-        <span
-          className="font-mono uppercase tracking-widest text-[9px] shrink-0"
-          style={{ color: 'var(--nx-cyan-dim)' }}
-        >
-          ◈ SIGNAL PROCESSOR
-        </span>
+        <span style={{ color: 'var(--t1)', fontSize: 14, fontWeight: 800 }}>EQ</span>
 
         {activeCount > 1 && (
           <span
-            className="font-mono text-[8px] px-1.5 py-0.5 shrink-0"
-            style={{ color: 'var(--nx-cyan)', border: '1px solid rgba(0,212,255,0.3)' }}
+            className="text-[8px] px-1.5 py-0.5 rounded shrink-0"
+            style={{ color: 'var(--a)', border: '1px solid #f59e0b45', background: '#f59e0b18', fontWeight: 700 }}
           >
-            {activeCount} ACTIVE
+            {activeCount} active
           </span>
         )}
 
         <div className="ml-auto flex items-center gap-1.5 shrink-0">
-          {/* BYPASS */}
+          {/* Bypass */}
           <button
             aria-label={state.bypass ? 'bypass on' : 'bypass off'}
             aria-pressed={state.bypass}
             onClick={() => dispatch({ type: 'TOGGLE_BYPASS' })}
-            className="font-mono uppercase tracking-widest text-[9px] px-2 py-0.5 transition-colors touch-manipulation"
+            className="text-[9px] px-2 py-0.5 rounded transition-colors touch-manipulation"
             style={{
-              border: `1px solid ${state.bypass ? 'var(--nx-red)' : 'rgba(0,212,255,0.2)'}`,
-              color: state.bypass ? 'var(--nx-red)' : 'var(--nx-text-dim)',
-              background: state.bypass ? 'rgba(255,0,60,0.08)' : 'transparent',
+              border: `1px solid ${state.bypass ? 'var(--orange)' : 'var(--br)'}`,
+              color: state.bypass ? 'var(--orange)' : 'var(--t2)',
+              background: state.bypass ? 'rgba(249,115,22,0.1)' : 'transparent',
+              fontWeight: 700,
             }}
           >
-            BYPASS
+            Bypass
           </button>
 
-          {/* FLAT */}
+          {/* Flat */}
           <button
             aria-label="Reset to flat"
             onClick={() => dispatch({ type: 'RESET_FLAT' })}
-            className="font-mono uppercase tracking-widest text-[9px] px-2 py-0.5 transition-colors touch-manipulation"
+            className="text-[9px] px-2 py-0.5 rounded transition-colors touch-manipulation"
             style={{
-              border: `1px solid ${isFlat ? 'rgba(0,212,255,0.5)' : 'rgba(0,212,255,0.2)'}`,
-              color: isFlat ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
-              background: isFlat ? 'rgba(0,212,255,0.06)' : 'transparent',
+              border: `1px solid ${isFlat ? '#f59e0b45' : 'var(--br)'}`,
+              color: isFlat ? 'var(--a)' : 'var(--t2)',
+              background: isFlat ? '#f59e0b18' : 'transparent',
+              fontWeight: 700,
             }}
           >
-            FLAT
+            Flat
           </button>
 
-          {/* SAVE / input */}
+          {/* Save / input */}
           {saving ? (
             <input
               autoFocus
@@ -329,21 +326,22 @@ export const EQPanel = memo(function EQPanel({
               value={saveName}
               onChange={e => setSaveName(e.target.value)}
               onKeyDown={handleSaveKeyDown}
-              className="font-mono text-[9px] px-2 py-0.5 bg-transparent outline-none w-24"
+              className="text-[9px] px-2 py-0.5 bg-transparent outline-none w-24 rounded"
               style={{
-                border: '1px solid rgba(0,212,255,0.3)',
-                color: 'var(--nx-text)',
-                caretColor: 'var(--nx-cyan)',
+                border: '1px solid var(--br)',
+                color: 'var(--t1)',
+                caretColor: 'var(--a)',
+                fontWeight: 500,
               }}
             />
           ) : (
             <button
               aria-label="Save preset"
               onClick={() => setSaving(true)}
-              className="font-mono uppercase tracking-widest text-[9px] px-2 py-0.5 transition-colors touch-manipulation"
-              style={{ border: '1px solid rgba(0,212,255,0.15)', color: 'var(--nx-text-dim)' }}
+              className="text-[9px] px-2 py-0.5 rounded transition-colors touch-manipulation"
+              style={{ border: '1px solid var(--br)', color: 'var(--t2)', fontWeight: 700 }}
             >
-              SAVE
+              Save
             </button>
           )}
 
@@ -352,10 +350,10 @@ export const EQPanel = memo(function EQPanel({
             <button
               aria-label="Close EQ panel"
               onClick={onClose}
-              className="font-mono text-[10px] px-1.5 py-0.5 transition-colors touch-manipulation"
-              style={{ color: 'var(--nx-text-dim)' }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--nx-red)'; }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--nx-text-dim)'; }}
+              className="flex items-center justify-center w-6 h-6 rounded transition-colors touch-manipulation"
+              style={{ color: 'var(--t2)', background: 'transparent' }}
+              onMouseEnter={e => { (e.currentTarget).style.color = 'var(--t1)'; }}
+              onMouseLeave={e => { (e.currentTarget).style.color = 'var(--t2)'; }}
             >
               ✕
             </button>
@@ -366,7 +364,7 @@ export const EQPanel = memo(function EQPanel({
       {/* ── Header Row 2: preset chips ── */}
       <div
         className="flex gap-1 px-3 py-1.5 overflow-x-auto shrink-0"
-        style={{ borderBottom: '1px solid var(--nx-border)' }}
+        style={{ borderBottom: '1px solid var(--br)' }}
       >
         {BUILTIN_PRESETS.filter(p => p.name !== 'Flat').map(p => {
           const isActive = state.activePresets.includes(p.name);
@@ -375,11 +373,12 @@ export const EQPanel = memo(function EQPanel({
               key={p.name}
               aria-label={p.name}
               onClick={() => togglePreset(p.gains, p.name)}
-              className="font-mono uppercase tracking-widest text-[8px] px-2 py-1 shrink-0 touch-manipulation transition-colors"
+              className="text-[9px] px-2 py-1 rounded shrink-0 touch-manipulation transition-colors"
               style={{
-                border: `1px solid ${isActive ? 'rgba(0,212,255,0.55)' : 'rgba(0,212,255,0.12)'}`,
-                color: isActive ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
-                background: isActive ? 'rgba(0,212,255,0.07)' : 'transparent',
+                border: `1px solid ${isActive ? '#f59e0b45' : 'var(--br)'}`,
+                color: isActive ? 'var(--a)' : 'var(--t2)',
+                background: isActive ? '#f59e0b18' : 'transparent',
+                fontWeight: 700,
               }}
             >
               {p.name}
@@ -393,11 +392,12 @@ export const EQPanel = memo(function EQPanel({
               key={p.id ?? p.name}
               aria-label={p.name}
               onClick={() => togglePreset(p.bands.map(b => b.gain), p.name)}
-              className="font-mono uppercase tracking-widest text-[8px] px-2 py-1 shrink-0 touch-manipulation transition-colors"
+              className="text-[9px] px-2 py-1 rounded shrink-0 touch-manipulation transition-colors"
               style={{
-                border: `1px solid ${isActive ? 'rgba(0,212,255,0.55)' : 'rgba(0,212,255,0.12)'}`,
-                color: isActive ? 'var(--nx-cyan)' : 'var(--nx-text-dim)',
-                background: isActive ? 'rgba(0,212,255,0.07)' : 'transparent',
+                border: `1px solid ${isActive ? '#f59e0b45' : 'var(--br)'}`,
+                color: isActive ? 'var(--a)' : 'var(--t2)',
+                background: isActive ? '#f59e0b18' : 'transparent',
+                fontWeight: 700,
               }}
             >
               {p.name}

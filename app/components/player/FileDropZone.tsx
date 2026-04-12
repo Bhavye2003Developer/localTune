@@ -2,7 +2,6 @@
 
 import { useRef, useState, useCallback, type DragEvent } from 'react';
 import { usePlayer } from '../../lib/playerContext';
-import { TacticalBrackets } from '../ui/TacticalBrackets';
 
 async function extractFiles(entry: FileSystemEntry): Promise<File[]> {
   if (entry.isFile) {
@@ -49,17 +48,12 @@ export function FileDropZone() {
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onClick={() => inputRef.current?.click()}
-      className="relative mx-3 my-2 cursor-pointer flex flex-col items-center justify-center gap-1.5 py-5 px-4 transition-all"
+      className="mx-3 my-2 cursor-pointer flex flex-col items-center justify-center gap-1 py-4 px-4 transition-all rounded-lg"
       style={{
-        boxShadow: dragging ? '0 0 16px rgba(255,0,60,0.15)' : undefined,
+        border: dragging ? '1px dashed #f59e0b' : '1px dashed var(--br)',
+        background: dragging ? '#f59e0b08' : 'var(--s2)',
       }}
     >
-      <TacticalBrackets
-        color={dragging ? 'rgba(255,0,60,0.7)' : 'rgba(0,212,255,0.35)'}
-        size={12}
-        thickness={1.5}
-      />
-
       <input
         ref={inputRef}
         type="file"
@@ -68,12 +62,17 @@ export function FileDropZone() {
         className="hidden"
         onChange={onInputChange}
       />
-
-      <span className="font-mono uppercase tracking-widest text-[9px]" style={{ color: dragging ? 'var(--nx-red)' : 'var(--nx-cyan-dim)' }}>
-        {dragging ? 'RECEIVING PAYLOAD' : 'DROP AUDIO FILES'}
+      <span
+        className="text-[11px] font-semibold"
+        style={{ color: dragging ? 'var(--a)' : 'var(--t2)', fontFamily: 'Syne, system-ui, sans-serif', fontWeight: 700 }}
+      >
+        {dragging ? 'Drop to add' : 'Add files'}
       </span>
-      <span className="font-mono text-[9px]" style={{ color: 'var(--nx-text-dim)' }}>
-        {dragging ? '—' : 'OR CLICK TO SELECT'}
+      <span
+        className="text-[9.5px]"
+        style={{ color: 'var(--t3)', fontFamily: 'Syne, system-ui, sans-serif', fontWeight: 500 }}
+      >
+        {dragging ? '' : 'drag & drop or click'}
       </span>
     </div>
   );

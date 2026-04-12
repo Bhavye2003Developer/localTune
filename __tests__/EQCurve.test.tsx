@@ -91,7 +91,7 @@ describe('EQCurve component', () => {
       <EQCurve state={INITIAL_EQ_STATE} dispatch={noop} />
     );
     const area = container.querySelector('[data-testid="eq-area"]')!;
-    expect(area.getAttribute('fill')).toBe('rgba(0,212,255,0.08)');
+    expect(area.getAttribute('fill')).toBe('rgba(245,158,11,0.08)');
   });
 
   it('renders curve path with correct stroke', () => {
@@ -99,6 +99,6 @@ describe('EQCurve component', () => {
       <EQCurve state={INITIAL_EQ_STATE} dispatch={noop} />
     );
     const curve = container.querySelector('[data-testid="eq-curve"]')!;
-    expect(curve.getAttribute('stroke')).toBe('#00d4ff');
+    expect(curve.getAttribute('stroke')).toBe('#F59E0B');
   });
 });
