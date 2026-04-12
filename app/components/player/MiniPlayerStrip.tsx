@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useEffect, useRef } from 'react';
-import { Play, Pause, SkipForward, Music } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Music } from 'lucide-react';
 import { usePlayer, formatTime, getAudioEl } from '../../lib/playerContext';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const MiniPlayerStrip = memo(function MiniPlayerStrip({ onOpenPlayer }: Props) {
-  const { state, togglePlay, next } = usePlayer();
+  const { state, togglePlay, prev, next } = usePlayer();
   const { tracks, queue, queuePos, playing } = state;
   const currentId = queue[queuePos] ?? null;
   const track = currentId ? tracks.find(t => t.id === currentId) ?? null : null;
@@ -75,6 +75,15 @@ export const MiniPlayerStrip = memo(function MiniPlayerStrip({ onOpenPlayer }: P
             {track.artist || track.name}
           </p>
         </div>
+      </button>
+
+      {/* Prev */}
+      <button
+        onClick={e => { e.stopPropagation(); prev(); }}
+        className="flex items-center justify-center w-11 h-11 shrink-0"
+        style={{ color: 'var(--t2)' }}
+      >
+        <SkipBack size={16} />
       </button>
 
       {/* Play/pause */}
