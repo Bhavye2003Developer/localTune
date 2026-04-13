@@ -218,8 +218,8 @@ function PlayerInner() {
           {/* Tab strip */}
           <TabStrip openPanels={openPanels} onToggle={handleTogglePanel} />
 
-          {/* Panel stack */}
-          <div className="shrink-0 overflow-y-auto" style={{ maxHeight: 340 }}>
+          {/* Panel stack — maxHeight raised so Marks text isn't cut when DSP (280px) is above it */}
+          <div className="shrink-0 overflow-y-auto" style={{ maxHeight: 500 }}>
             <PanelStack {...panelStackProps} />
           </div>
 
@@ -252,9 +252,10 @@ function PlayerInner() {
           </div>
         ) : (
           <div className="flex-1 min-h-0 flex flex-col overflow-y-auto" style={{ background: 'var(--bg)' }}>
-            <NowPlayingStage />
-            <TabStrip openPanels={openPanels} onToggle={handleTogglePanel} />
-            <PanelStack {...panelStackProps} />
+            {/* shrink-0 on each child so overflow-y-auto scrolls instead of compressing */}
+            <div className="shrink-0"><NowPlayingStage /></div>
+            <div className="shrink-0"><TabStrip openPanels={openPanels} onToggle={handleTogglePanel} /></div>
+            <div className="shrink-0"><PanelStack {...panelStackProps} /></div>
           </div>
         )}
 
