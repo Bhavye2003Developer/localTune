@@ -69,6 +69,15 @@ export class FineTuneDB extends Dexie {
       fileBlobs:       'fileId',
       gaplessSettings: 'id',
     });
+    // v5 — same schema; bumped to resolve native IDB version mismatch that
+    // occurs when v4 was first loaded without gaplessSettings in some browsers
+    this.version(5).stores({
+      tracks:          '++id, fileId, name',
+      eqPresets:       '++id, name',
+      dspSettings:     'id',
+      fileBlobs:       'fileId',
+      gaplessSettings: 'id',
+    });
   }
 }
 
