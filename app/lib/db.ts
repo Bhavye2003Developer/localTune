@@ -31,11 +31,18 @@ export interface StoredDSPSettings {
   settings: string;     // JSON-serialised DSPSettings
 }
 
+export interface StoredGaplessSettings {
+  id: string;           // always 'default'
+  enabled: boolean;
+  crossfade: number;    // 0–6 seconds
+}
+
 export class FineTuneDB extends Dexie {
   tracks!: Table<StoredTrack>;
   eqPresets!: Table<EQPreset>;
   dspSettings!: Table<StoredDSPSettings>;
   fileBlobs!: Table<StoredFileBlob>;
+  gaplessSettings!: Table<StoredGaplessSettings>;
 
   constructor() {
     super('finetune_v1');
@@ -53,6 +60,14 @@ export class FineTuneDB extends Dexie {
       eqPresets:   '++id, name',
       dspSettings: 'id',
       fileBlobs:   'fileId',
+    });
+    // v4 — gapless playback settings (single-row, id='default')
+    this.version(4).stores({
+      tracks:          '++id, fileId, name',
+      eqPresets:       '++id, name',
+      dspSettings:     'id',
+      fileBlobs:       'fileId',
+      gaplessSettings: 'id',
     });
   }
 }

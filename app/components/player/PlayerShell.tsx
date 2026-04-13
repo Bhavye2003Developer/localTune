@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { PlayerProvider, usePlayer, formatTime } from '../../lib/playerContext';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useGaplessScheduler } from '../../lib/useGaplessScheduler';
 import { FileDropZone } from './FileDropZone';
 import { TrackLibrary, type TrackLibraryHandle } from './TrackLibrary';
 import { PlayerBar } from './PlayerBar';
@@ -15,6 +16,7 @@ import { TabStrip, type TabId } from './TabStrip';
 import { InlineQueue } from './InlineQueue';
 import { MobileBottomNav, type MobileTab } from './MobileBottomNav';
 import { MiniPlayerStrip } from './MiniPlayerStrip';
+import type { GaplessSettings } from '../dsp/stages/GaplessStage';
 
 // ─── Marks (A-B loop) inline panel ───────────────────────────────────────────
 
@@ -89,10 +91,11 @@ interface PanelStackProps {
   detectedReplayGain: string | null;
   setEQBandGain: (i: number, g: number) => void;
   setEQBypass:   (on: boolean) => void;
+  onGaplessChange: (s: GaplessSettings) => void;
 }
 
 function PanelStack({
-  openPanels, onToggleEQ, detectedReplayGain, setEQBandGain, setEQBypass,
+  openPanels, onToggleEQ, detectedReplayGain, setEQBandGain, setEQBypass, onGaplessChange,
 }: PanelStackProps) {
   return (
     <div className="flex flex-col">
@@ -108,7 +111,7 @@ function PanelStack({
       )}
       {openPanels.has('DSP') && (
         <div style={{ height: 280, overflowY: 'auto', borderBottom: '1px solid var(--br)' }}>
-          <DSPPanel onOpenEQ={onToggleEQ} detectedReplayGain={detectedReplayGain} />
+          <DSPPanel onOpenEQ={onToggleEQ} detectedReplayGain={detectedReplayGain} onGaplessChange={onGaplessChange} />
         </div>
       )}
       {openPanels.has('Marks') && (
@@ -130,6 +133,15 @@ function PlayerInner() {
   const [detectedReplayGain] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>('library');
   const searchRef = useRef<TrackLibraryHandle>(null);
+  const [gaplessSettings, setGaplessSettings] = useState<GaplessSettings>({ enabled: false, crossfade: 0 });
+
+  useGaplessScheduler({
+    state,
+    enabled: gaplessSettings.enabled,
+    crossfade: gaplessSettings.crossfade,
+  });
+
+  const handleGaplessChange = useCallback((s: GaplessSettings) => setGaplessSettings(s), []);
 
   const handleTogglePanel = useCallback((tab: TabId) => {
     setOpenPanels(prev => {
@@ -164,6 +176,7 @@ function PlayerInner() {
     detectedReplayGain,
     setEQBandGain,
     setEQBypass,
+    onGaplessChange: handleGaplessChange,
   };
 
   return (

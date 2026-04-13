@@ -301,8 +301,21 @@ export function ensureAudio() {
   _analyserNode.fftSize = 2048;
   gainNode = audioCtx.createGain();
 
+  // Insert a dedicated gain node between the media element source and the analyser
+  // so the crossfade can ramp just the HTMLAudioElement signal independently of
+  // the user-controlled gainNode (volume/mute).
+  mediaElementGainNode = audioCtx.createGain();
+  mediaElementGainNode.gain.value = 1;
+
+  // Parallel input into the analyser for the pre-decoded AudioBufferSourceNode.
+  // Stays at 0 until a gapless handoff is in progress.
+  gaplessGainNode = audioCtx.createGain();
+  gaplessGainNode.gain.value = 0;
+
   const src = audioCtx.createMediaElementSource(audioEl);
-  src.connect(_analyserNode);
+  src.connect(mediaElementGainNode);
+  mediaElementGainNode.connect(_analyserNode);
+  gaplessGainNode.connect(_analyserNode);
 
   // DSP chain: analyser → [full DSP pipeline] → gainNode → destination
   initDSP(audioCtx, _analyserNode, gainNode);
@@ -808,6 +821,42 @@ export function usePlayer(): PlayerContextValue {
 
 // Expose audio element for direct currentTime reads (e.g., RAF-driven progress bar)
 export function getAudioEl(): HTMLAudioElement | null { return audioEl; }
+
+// ─── Gapless playback — audio graph additions ─────────────────────────────────
+// mediaElementGainNode sits between MediaElementAudioSource and AnalyserNode so
+// we can ramp its gain to 0 during a crossfade handoff without touching the
+// main volume gainNode (which controls user volume/mute).
+// gaplessGainNode is a parallel input into the same AnalyserNode — starts at 0,
+// ramped to 1 when an AudioBufferSourceNode fires for the next track.
+let mediaElementGainNode: GainNode | null = null;
+let gaplessGainNode: GainNode | null = null;
+
+export function getAudioCtx(): AudioContext | null { return audioCtx; }
+export function getMediaElementGainNode(): GainNode | null { return mediaElementGainNode; }
+export function getGaplessGainNode(): GainNode | null { return gaplessGainNode; }
+
+// ─── Pure helper — next track for gapless pre-decode ─────────────────────────
+// Returns the Track object that will play after the current queuePos.
+// Returns null when gapless is not applicable: single-track queue, track-loop,
+// last track with loopMode=off, or next id not in tracks[].
+export function getNextTrackFromState(state: PlayerState): Track | null {
+  const { queue, queuePos, loopMode, tracks } = state;
+  if (queue.length === 0 || queuePos < 0) return null;
+  // track-loop replays the same track — gapless not applicable
+  if (loopMode === 'track') return null;
+
+  let nextPos = queuePos + 1;
+  if (nextPos >= queue.length) {
+    if (loopMode === 'queue' && queue.length > 1) {
+      nextPos = 0;
+    } else {
+      return null; // last track, no wrap
+    }
+  }
+
+  const nextId = queue[nextPos];
+  return tracks.find(t => t.id === nextId) ?? null;
+}
 
 // Helper — format seconds as M:SS
 export function formatTime(s: number): string {

@@ -25,6 +25,7 @@ import { StereoWidenerStage } from './stages/StereoWidenerStage';
 import { ReverbStage } from './stages/ReverbStage';
 import { LimiterStage } from './stages/LimiterStage';
 import { EQLink } from './stages/EQLink';
+import { GaplessStage, type GaplessSettings } from './stages/GaplessStage';
 
 // ─── Sortable stage wrapper ───────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ function renderStage(id: StageId, dragHandleProps: Record<string, unknown>, onOp
 interface DSPPanelProps {
   onOpenEQ: () => void;
   detectedReplayGain: string | null;
+  onGaplessChange?: (s: GaplessSettings) => void;
   /** @deprecated — visibility now controlled by parent mount/unmount */
   open?: boolean;
   /** @deprecated — visibility now controlled by parent mount/unmount */
@@ -67,7 +69,7 @@ interface DSPPanelProps {
 }
 
 export const DSPPanel = memo(function DSPPanel({
-  onOpenEQ, detectedReplayGain, open: _open, onClose: _onClose,
+  onOpenEQ, detectedReplayGain, onGaplessChange, open: _open, onClose: _onClose,
 }: DSPPanelProps) {
   const [order, setOrder] = useState<StageId[]>(() => getStageOrder());
 
@@ -105,6 +107,13 @@ export const DSPPanel = memo(function DSPPanel({
 
         {/* Fixed bottom: Limiter */}
         <LimiterStage />
+
+        {/* Gapless playback — below limiter, not part of DSP chain */}
+        {onGaplessChange && (
+          <div style={{ marginTop: 4 }}>
+            <GaplessStage onSettingsChange={onGaplessChange} />
+          </div>
+        )}
       </div>
     </div>
   );

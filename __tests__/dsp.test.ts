@@ -2,22 +2,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Web Audio mock factory ───────────────────────────────────────────────────
 
+/** AudioParam mock — includes scheduling methods used by setParam() */
+function makeParam(init = 0) {
+  return {
+    value: init,
+    setValueAtTime:  vi.fn(),
+    setTargetAtTime: vi.fn(),
+  };
+}
+
 function makeGain(init = 0) {
-  return { connect: vi.fn(), disconnect: vi.fn(), gain: { value: init } };
+  return { connect: vi.fn(), disconnect: vi.fn(), gain: makeParam(init) };
 }
 function makeBiquad() {
   return {
     connect: vi.fn(), disconnect: vi.fn(),
     type: 'peaking' as BiquadFilterType,
-    frequency: { value: 0 }, Q: { value: 1 }, gain: { value: 0 },
+    frequency: makeParam(0), Q: makeParam(1), gain: makeParam(0),
   };
 }
 function makeCompressor() {
   return {
     connect: vi.fn(), disconnect: vi.fn(),
-    threshold: { value: -24 }, ratio: { value: 4 },
-    attack: { value: 0.003 }, release: { value: 0.25 },
-    knee: { value: 30 }, reduction: 0,
+    threshold: makeParam(-24), ratio: makeParam(4),
+    attack: makeParam(0.003), release: makeParam(0.25),
+    knee: makeParam(30), reduction: 0,
   };
 }
 function makeConvolver() {

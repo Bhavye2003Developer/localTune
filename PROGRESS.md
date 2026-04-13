@@ -40,6 +40,18 @@
 - Added DB version 3 migration (`fileBlobs: 'fileId'` table)
 - Fixed duplicate filtering in `loadFiles` — skips files already in library
 
+### Session 11 — Feature 6: Gapless Playback (2026-04-13)
+- Added `app/lib/decodeWorker.ts` — Web Worker that fetches a blob URL and transfers the ArrayBuffer back to the main thread
+- Added `app/lib/useGaplessScheduler.ts` — hook that polls position every 100ms, pre-decodes at (duration - 3s), schedules `AudioBufferSourceNode.start()` at (duration - 1.5s), handles crossfade gain ramps, cancels on track change/seek
+- Added `app/components/dsp/stages/GaplessStage.tsx` — UI toggle (on/off) + crossfade slider (0–6s), reads/writes `db.gaplessSettings`
+- Modified `app/lib/playerContext.tsx`: added `mediaElementGainNode` (between MediaElementAudioSource → AnalyserNode for crossfade), `gaplessGainNode` (parallel to AnalyserNode, stays at 0 until handoff), exported `getAudioCtx()`, `getMediaElementGainNode()`, `getGaplessGainNode()`, `getNextTrackFromState()`
+- Modified `app/lib/db.ts`: Dexie version 4 migration — added `gaplessSettings: 'id'` table with `StoredGaplessSettings` interface
+- Modified `app/components/dsp/DSPPanel.tsx`: added `GaplessStage` below Limiter; `onGaplessChange?` prop threaded from `PlayerShell`
+- Modified `app/components/player/PlayerShell.tsx`: `useGaplessScheduler` called in `PlayerInner`; gapless state held in `PlayerInner` and passed down via `panelStackProps`
+- Added tests: `__tests__/gaplessScheduler.test.ts` (10 cases — `getNextTrackFromState`), `__tests__/useGaplessScheduler.test.ts` (10 cases — hook), `__tests__/GaplessStage.test.tsx` (10 cases — component)
+- **Architectural decision:** `mediaElementGainNode` inserted between MediaElementAudioSource and AnalyserNode — allows crossfade without disconnecting any nodes (no audio click). `gaplessGainNode` is a permanent parallel input to the same AnalyserNode (gain=0 normally). Both are module-level singletons created in `ensureAudio()`.
+- **Architectural decision:** Gapless settings stored in a dedicated `gaplessSettings` table (single-row, `id='default'`) — same pattern as `dspSettings`. Not merged into `tracks` (settings are global, not per-track).
+
 ### Session 10 — Delete feature + codebase audit (2026-04-12)
 - Added `REMOVE_TRACK` action + reducer — resets player if deleting current track
 - Added `removeTrack` callback — stops audio, revokes blob URLs, cleans IndexedDB
@@ -89,6 +101,12 @@
 | `app/components/dsp/DspCard.tsx` | Shared card wrapper with bypass toggle + drag handle |
 | `app/components/dsp/stages/*.tsx` | Per-stage UI components (6 stages) |
 | `public/ir/*.wav` | Impulse response WAVs for ConvolverNode |
+| `app/lib/decodeWorker.ts` | Web Worker — fetches blob URL, transfers ArrayBuffer to main thread |
+| `app/lib/useGaplessScheduler.ts` | Hook — pre-decode + scheduling + crossfade for gapless playback |
+| `app/components/dsp/stages/GaplessStage.tsx` | Gapless on/off toggle + crossfade slider UI; persists to Dexie |
+| `__tests__/gaplessScheduler.test.ts` | Pure helper tests — `getNextTrackFromState` (10 cases) |
+| `__tests__/useGaplessScheduler.test.ts` | Hook unit tests (10 cases) |
+| `__tests__/GaplessStage.test.tsx` | Component tests (10 cases) |
 | `__tests__/playerReducer.test.ts` | Pure reducer unit tests (31 cases) |
 | `__tests__/eqReducer.test.ts` | EQ reducer unit tests (12 cases) |
 | `__tests__/playerContext.eq.test.ts` | EQ audio chain tests (6 cases) |
@@ -306,12 +324,13 @@
 
 ---
 
-### Feature 6 — Gapless Playback ❌
+### Feature 6 — Gapless Playback ✅
 
-- [ ] Pre-decode next `AudioBuffer` in Web Worker during final 3 seconds
-- [ ] Schedule next track on Web Audio timeline — zero silence
-- [ ] Crossfade option (0–6 seconds)
-- [ ] Settings stored in Dexie
+- [x] Pre-decode next `AudioBuffer` during final 3 seconds (`useGaplessScheduler` + `decodeWorker.ts`)
+- [x] Schedule next track on Web Audio timeline — `AudioBufferSourceNode.start(scheduledTime)`
+- [x] Crossfade option (0–6 seconds) — `setTargetAtTime` ramps on both gain nodes
+- [x] Settings stored in Dexie v4 `gaplessSettings` table (single-row, `id='default'`)
+- [x] UI: toggle + crossfade slider in `GaplessStage.tsx` (rendered in DSP panel)
 
 ---
 

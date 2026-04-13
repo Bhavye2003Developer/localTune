@@ -31,9 +31,11 @@ describe('EQPanel', () => {
     vi.clearAllMocks();
   });
 
-  it('does not render when closed', () => {
+  it('still renders when open=false (visibility controlled by parent mount/unmount)', () => {
+    // EQPanel is always mounted/unmounted by the parent — open=false only gates
+    // the Dexie preset fetch, it does not suppress rendering.
     const { container } = render(<EQPanel {...defaultProps} open={false} />);
-    expect(container.firstChild).toBeNull();
+    expect(container.firstChild).not.toBeNull();
   });
 
   it('renders "EQ" heading when open', () => {

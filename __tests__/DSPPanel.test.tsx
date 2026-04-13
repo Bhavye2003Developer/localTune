@@ -130,9 +130,10 @@ describe('DSPPanel', () => {
     expect(screen.getByText(/GR/i)).toBeInTheDocument();
   });
 
-  it('panel is hidden when open=false', () => {
-    const { container } = renderPanel(false);
-    const panel = container.firstChild as HTMLElement;
-    expect(panel.style.height).toBe('0px');
+  it('still renders when open=false (visibility controlled by parent mount/unmount)', () => {
+    // open prop is deprecated — DSPPanel is always mounted/unmounted by parent,
+    // never hidden via a CSS height trick. Verify it renders without crashing.
+    renderPanel(false);
+    expect(screen.getByText(/Limiter/i)).toBeInTheDocument();
   });
 });
