@@ -41,8 +41,4 @@ One `AudioContext` per session, created on first user gesture. Audio nodes are b
 
 Files are stored as blobs in IndexedDB up to a 150 MB cap. On next session open, blob URLs are recreated from the stored data and ID3 tags are re-read for cover art.
 
-## Contributing
-
-GitHub: [Bhavye2003Developer/localTune](https://github.com/Bhavye2003Developer/localTune)
-
-If you find this useful, a star on GitHub goes a long way. Built with [Claude Code](https://claude.ai/code).
+Built with [Claude Code](https://claude.ai/code).
