@@ -344,8 +344,10 @@ export const PlayerBar = memo(function PlayerBar({
             </div>
           </div>
 
-          {/* Sleep timer */}
-          <SleepTimer />
+          {/* Sleep timer — desktop only; mobile has its own row below */}
+          <div className="hidden sm:flex ml-1 pl-1" style={{ borderLeft: '1px solid var(--br)' }}>
+            <SleepTimer />
+          </div>
 
           {/* Keyboard shortcuts (desktop only) */}
           <button onClick={onOpenShortcuts} title="Keyboard shortcuts (?)"
@@ -412,6 +414,11 @@ export const PlayerBar = memo(function PlayerBar({
         >
           {formatTime(duration)}
         </span>
+      </div>
+
+      {/* ── Row 3: Mobile secondary controls ── */}
+      <div className="sm:hidden flex items-center justify-end px-3 pb-2">
+        <SleepTimer />
       </div>
 
       {/* ── Seek bar A/B context menu ── */}
