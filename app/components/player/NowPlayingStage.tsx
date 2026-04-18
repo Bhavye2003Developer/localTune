@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Music } from 'lucide-react';
 import { usePlayer, formatTime } from '../../lib/playerContext';
 import { VinylPlatter } from './VinylPlatter';
+import { SleepTimer } from './SleepTimer';
 
 const FORMAT_MAP: Record<string, string> = {
   'audio/mpeg': 'MP3', 'audio/flac': 'FLAC', 'audio/wav': 'WAV',
@@ -102,11 +103,14 @@ export function NowPlayingStage() {
           )}
         </div>
 
-        {/* Chips */}
+        {/* Chips + mobile sleep timer */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <Chip accent>{fmtLabel(track.type)}</Chip>
           <Chip>{fmtBytes(track.size)}</Chip>
           {track.duration > 0 && <Chip>{formatTime(track.duration)}</Chip>}
+          <div className="sm:hidden">
+            <SleepTimer />
+          </div>
         </div>
       </div>
     </div>

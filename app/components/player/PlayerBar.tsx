@@ -416,11 +416,6 @@ export const PlayerBar = memo(function PlayerBar({
         </span>
       </div>
 
-      {/* ── Row 3: Mobile secondary controls ── */}
-      <div className="sm:hidden flex items-center justify-end px-3 pb-2">
-        <SleepTimer />
-      </div>
-
       {/* ── Seek bar A/B context menu ── */}
       {seekCtxMenu.visible && (
         <div
