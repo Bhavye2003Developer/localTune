@@ -27,6 +27,8 @@ Drop audio files (or folders) into the app. They get indexed, persisted to Index
 
 **Queue** - add tracks, reorder by dragging, remove individually or clear all. Auto-advances on track end.
 
+**Sleep timer** - set a countdown (15 / 30 / 45 / 60 min) from the moon icon in the player bar. Playback pauses automatically when time is up.
+
 ## Stack
 
 Next.js 16, React 19, TypeScript 5 (strict), Tailwind CSS 4, Dexie (IndexedDB), Web Audio API, Framer Motion.
