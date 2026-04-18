@@ -104,6 +104,7 @@
 | `app/lib/decodeWorker.ts` | Web Worker — fetches blob URL, transfers ArrayBuffer to main thread |
 | `app/lib/useGaplessScheduler.ts` | Hook — pre-decode + scheduling + crossfade for gapless playback |
 | `app/components/dsp/stages/GaplessStage.tsx` | Gapless on/off toggle + crossfade slider UI; persists to Dexie |
+| `__tests__/hashToColor.test.ts` | Pure unit tests — `hashToColor` (10 cases) |
 | `__tests__/gaplessScheduler.test.ts` | Pure helper tests — `getNextTrackFromState` (10 cases) |
 | `__tests__/useGaplessScheduler.test.ts` | Hook unit tests (10 cases) |
 | `__tests__/GaplessStage.test.tsx` | Component tests (10 cases) |
@@ -388,12 +389,12 @@
 
 ---
 
-### Feature 12 — Album Art Color Extraction 🔶
+### Feature 12 — Album Art Color Extraction ✅
 
 - [x] `color-thief-browser` dominant color extraction from `coverUrl`
 - [x] Animated gradient background in player (NowPlayingPanel radial gradient)
 - [x] Nebula particle palette tied to album color (`uColorTint` + `uTintStrength` uniforms)
-- [ ] Hash-based gradient fallback for tracks without art
+- [x] Hash-based gradient fallback for tracks without art — `hashToColor()` in `utils.ts` (djb2 → HSL → RGB); applied in `NowPlayingPanel` when no `coverUrl` or on ColorThief failure
 
 ---
 

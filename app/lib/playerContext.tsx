@@ -109,7 +109,8 @@ type Action =
   | { type: 'CYCLE_SHUFFLE' }
   | { type: 'CYCLE_LOOP_MODE' }
   | { type: 'TRACK_ENDED' }
-  | { type: 'PUSH_HISTORY'; id: string };
+  | { type: 'PUSH_HISTORY'; id: string }
+  | { type: 'JUMP_TO_QUEUE_POS'; pos: number };
 
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -280,6 +281,18 @@ export function reducer(state: PlayerState, action: Action): PlayerState {
     case 'PUSH_HISTORY': {
       const newHistory = [...state.history, action.id].slice(-50);
       return { ...state, history: newHistory };
+    }
+
+    case 'JUMP_TO_QUEUE_POS': {
+      const { pos } = action;
+      if (pos < 0 || pos >= state.queue.length) return state;
+      if (pos === state.queuePos) {
+        // Re-click current track → restart from beginning
+        return { ...state, playing: true, position: 0 };
+      }
+      const currentId = state.queue[state.queuePos];
+      const newHistory = currentId ? [...state.history, currentId].slice(-50) : state.history;
+      return { ...state, queuePos: pos, playing: true, position: 0, history: newHistory };
     }
 
     default:
@@ -455,6 +468,7 @@ export interface PlayerContextValue {
   playNow: (id: string) => void;
   playNext: (id: string) => void;
   addToQueue: (id: string) => void;
+  jumpToQueuePos: (pos: number) => void;
   removeFromQueue: (pos: number) => void;
   clearQueue: () => void;
   reorderQueue: (from: number, to: number) => void;
@@ -598,6 +612,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setReplayGain(null);
   }, [state.queuePos]);
 
+  // Restore A-B marks for the current track from Dexie; clear if none saved
+  useEffect(() => {
+    const trackId = state.queue[state.queuePos];
+    if (!trackId) {
+      dispatch({ type: 'CLEAR_LOOP' });
+      return;
+    }
+    db.tracks.where('fileId').equals(trackId).first().then(stored => {
+      if (stored && stored.loopA != null && stored.loopB != null) {
+        dispatch({ type: 'SET_LOOP_A', a: stored.loopA });
+        dispatch({ type: 'SET_LOOP_B', b: stored.loopB });
+      } else {
+        dispatch({ type: 'CLEAR_LOOP' });
+      }
+    }).catch(() => { dispatch({ type: 'CLEAR_LOOP' }); });
+  }, [state.queuePos]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Actions ───────────────────────────────────────────────────────────────
 
   const loadFiles = useCallback(async (files: FileList | File[]) => {
@@ -728,6 +759,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const playNext       = useCallback((id: string) => dispatch({ type: 'PLAY_NEXT', id }), []);
   const addToQueue     = useCallback((id: string) => dispatch({ type: 'ADD_TO_QUEUE', id }), []);
+  const jumpToQueuePos = useCallback((pos: number) => {
+    const cur = stateRef.current;
+    if (pos === cur.queuePos && audioEl) audioEl.currentTime = 0;
+    dispatch({ type: 'JUMP_TO_QUEUE_POS', pos });
+  }, []);
   const removeFromQueue = useCallback((pos: number) => dispatch({ type: 'REMOVE_FROM_QUEUE', pos }), []);
   const clearQueue     = useCallback(() => dispatch({ type: 'CLEAR_QUEUE' }), []);
   const reorderQueue   = useCallback((from: number, to: number) => dispatch({ type: 'REORDER_QUEUE', from, to }), []);
@@ -761,12 +797,36 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const setVolume     = useCallback((v: number) => dispatch({ type: 'SET_VOLUME', volume: v }), []);
   const toggleMute    = useCallback(() => dispatch({ type: 'TOGGLE_MUTE' }), []);
   const setSpeed      = useCallback((s: number) => dispatch({ type: 'SET_SPEED', speed: s }), []);
-  const setLoopA      = useCallback(() => { if (audioEl) dispatch({ type: 'SET_LOOP_A', a: audioEl.currentTime }); }, []);
-  const setLoopB      = useCallback(() => { if (audioEl) dispatch({ type: 'SET_LOOP_B', b: audioEl.currentTime }); }, []);
-  const setLoopAAt    = useCallback((s: number) => dispatch({ type: 'SET_LOOP_A', a: s }), []);
-  const setLoopBAt    = useCallback((s: number) => dispatch({ type: 'SET_LOOP_B', b: s }), []);
-  const toggleLoop    = useCallback(() => dispatch({ type: 'TOGGLE_LOOP' }), []);
-  const clearLoop     = useCallback(() => dispatch({ type: 'CLEAR_LOOP' }), []);
+  const setLoopA = useCallback(() => {
+    if (!audioEl) return;
+    const a = audioEl.currentTime;
+    dispatch({ type: 'SET_LOOP_A', a });
+    const trackId = stateRef.current.queue[stateRef.current.queuePos];
+    if (trackId) db.tracks.where('fileId').equals(trackId).modify({ loopA: a }).catch(() => {});
+  }, []);
+  const setLoopB = useCallback(() => {
+    if (!audioEl) return;
+    const b = audioEl.currentTime;
+    dispatch({ type: 'SET_LOOP_B', b });
+    const trackId = stateRef.current.queue[stateRef.current.queuePos];
+    if (trackId) db.tracks.where('fileId').equals(trackId).modify({ loopB: b }).catch(() => {});
+  }, []);
+  const setLoopAAt = useCallback((s: number) => {
+    dispatch({ type: 'SET_LOOP_A', a: s });
+    const trackId = stateRef.current.queue[stateRef.current.queuePos];
+    if (trackId) db.tracks.where('fileId').equals(trackId).modify({ loopA: s }).catch(() => {});
+  }, []);
+  const setLoopBAt = useCallback((s: number) => {
+    dispatch({ type: 'SET_LOOP_B', b: s });
+    const trackId = stateRef.current.queue[stateRef.current.queuePos];
+    if (trackId) db.tracks.where('fileId').equals(trackId).modify({ loopB: s }).catch(() => {});
+  }, []);
+  const toggleLoop = useCallback(() => dispatch({ type: 'TOGGLE_LOOP' }), []);
+  const clearLoop  = useCallback(() => {
+    dispatch({ type: 'CLEAR_LOOP' });
+    const trackId = stateRef.current.queue[stateRef.current.queuePos];
+    if (trackId) db.tracks.where('fileId').equals(trackId).modify({ loopA: null, loopB: null }).catch(() => {});
+  }, []);
   const cycleShuffle  = useCallback(() => dispatch({ type: 'CYCLE_SHUFFLE' }), []);
   const cycleLoopMode = useCallback(() => dispatch({ type: 'CYCLE_LOOP_MODE' }), []);
   const setEQBandGainCb = useCallback((index: number, gainDb: number) => dspSetEQBandGain(index, gainDb), []);
@@ -801,7 +861,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       analyserNode: _analyserNode,
       loadFiles,
       removeTrack,
-      playNow, playNext, addToQueue, removeFromQueue, clearQueue, reorderQueue,
+      playNow, playNext, addToQueue, jumpToQueuePos, removeFromQueue, clearQueue, reorderQueue,
       togglePlay, seek, next, prev,
       setVolume, toggleMute, setSpeed,
       setLoopA, setLoopB, setLoopAAt, setLoopBAt, toggleLoop, clearLoop,

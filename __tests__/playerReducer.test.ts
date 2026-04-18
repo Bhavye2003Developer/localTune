@@ -180,6 +180,42 @@ describe('reducer — queue model', () => {
   });
 });
 
+describe('reducer — JUMP_TO_QUEUE_POS', () => {
+  it('jumps to target position, starts playing, resets position', () => {
+    const state = { ...INITIAL, queue: ['a', 'b', 'c'], queuePos: 0, playing: false };
+    const next = reducer(state, { type: 'JUMP_TO_QUEUE_POS', pos: 2 });
+    expect(next.queuePos).toBe(2);
+    expect(next.playing).toBe(true);
+    expect(next.position).toBe(0);
+  });
+
+  it('does not wipe other queue items', () => {
+    const state = { ...INITIAL, queue: ['a', 'b', 'c'], queuePos: 0 };
+    const next = reducer(state, { type: 'JUMP_TO_QUEUE_POS', pos: 1 });
+    expect(next.queue).toEqual(['a', 'b', 'c']);
+  });
+
+  it('pushes current track to history when jumping to a different track', () => {
+    const state = { ...INITIAL, queue: ['a', 'b', 'c'], queuePos: 0 };
+    const next = reducer(state, { type: 'JUMP_TO_QUEUE_POS', pos: 2 });
+    expect(next.history).toContain('a');
+  });
+
+  it('re-clicking current track restarts without pushing history', () => {
+    const state = { ...INITIAL, queue: ['a', 'b'], queuePos: 0, playing: true };
+    const next = reducer(state, { type: 'JUMP_TO_QUEUE_POS', pos: 0 });
+    expect(next.queuePos).toBe(0);
+    expect(next.playing).toBe(true);
+    expect(next.history).toEqual([]);
+  });
+
+  it('ignores out-of-bounds positions', () => {
+    const state = { ...INITIAL, queue: ['a', 'b'], queuePos: 0 };
+    expect(reducer(state, { type: 'JUMP_TO_QUEUE_POS', pos: -1 })).toBe(state);
+    expect(reducer(state, { type: 'JUMP_TO_QUEUE_POS', pos: 5 })).toBe(state);
+  });
+});
+
 describe('reducer — history buffer', () => {
   it('PUSH_HISTORY appends id to history', () => {
     const next = reducer(INITIAL, { type: 'PUSH_HISTORY', id: 'a' });

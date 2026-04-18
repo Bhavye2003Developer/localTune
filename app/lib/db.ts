@@ -13,6 +13,8 @@ export interface StoredTrack {
   bpm?: number;
   musicalKey?: string;
   mood?: string;
+  loopA?: number | null;
+  loopB?: number | null;
 }
 
 export interface StoredFileBlob {

@@ -29,7 +29,7 @@ interface SortableRowProps {
   isCurrent: boolean;
   pos: number;
   onRemove: (pos: number) => void;
-  onPlay: (id: string) => void;
+  onPlay: (id: string, pos: number) => void;
 }
 
 function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, pos, onRemove, onPlay }: SortableRowProps) {
@@ -47,7 +47,7 @@ function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, 
         paddingTop: 4, paddingBottom: 4, paddingLeft: 14, paddingRight: 14, minHeight: 40,
       }}
       className="flex items-center gap-2 cursor-pointer select-none group transition-colors"
-      onClick={() => onPlay(id)}
+      onClick={() => onPlay(id, pos)}
       onMouseEnter={e => {
         if (!isCurrent) (e.currentTarget as HTMLDivElement).style.background = 'var(--s3)';
       }}
@@ -107,7 +107,7 @@ function SortableRow({ id, dndId, title, artist, coverUrl, duration, isCurrent, 
 }
 
 export function InlineQueue() {
-  const { state, playNow, removeFromQueue, reorderQueue, clearQueue } = usePlayer();
+  const { state, jumpToQueuePos, removeFromQueue, reorderQueue, clearQueue } = usePlayer();
   const { tracks, queue, queuePos } = state;
   const currentId = queue[queuePos] ?? null;
 
@@ -126,7 +126,7 @@ export function InlineQueue() {
   }, [queue, reorderQueue]);
 
   const handleRemove = useCallback((pos: number) => removeFromQueue(pos), [removeFromQueue]);
-  const handlePlay   = useCallback((id: string)  => playNow(id),          [playNow]);
+  const handlePlay   = useCallback((_id: string, pos: number) => jumpToQueuePos(pos), [jumpToQueuePos]);
 
   return (
     <div className="flex flex-col min-h-0 flex-1" style={{ borderTop: '1px solid var(--br)' }}>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Music } from 'lucide-react';
 import { type Track, formatTime } from '../../lib/playerContext';
+import { hashToColor } from '../../lib/utils';
 
 interface Props {
   track: Track;
@@ -35,7 +36,11 @@ export function NowPlayingPanel({ track, onClose }: Props) {
   const [bgColor, setBgColor] = useState<string>('');
 
   useEffect(() => {
-    if (!track.coverUrl) { setBgColor(''); return; }
+    if (!track.coverUrl) {
+      const [r, g, b] = hashToColor(track.title + (track.artist ?? ''));
+      setBgColor(`radial-gradient(ellipse at center, rgba(${r},${g},${b},0.20) 0%, var(--s1) 70%)`);
+      return;
+    }
     const img = new window.Image();
     img.src = track.coverUrl;
     img.onload = async () => {
@@ -45,10 +50,11 @@ export function NowPlayingPanel({ track, onClose }: Props) {
         const [r, g, b] = ct.getColor(img);
         setBgColor(`radial-gradient(ellipse at center, rgba(${r},${g},${b},0.25) 0%, var(--s1) 70%)`);
       } catch {
-        setBgColor('');
+        const [r, g, b] = hashToColor(track.title + (track.artist ?? ''));
+        setBgColor(`radial-gradient(ellipse at center, rgba(${r},${g},${b},0.20) 0%, var(--s1) 70%)`);
       }
     };
-  }, [track.coverUrl]);
+  }, [track.coverUrl, track.title, track.artist]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -65,7 +71,7 @@ export function NowPlayingPanel({ track, onClose }: Props) {
       <div
         className="relative overflow-hidden w-full sm:w-80 max-h-full overflow-y-auto"
         style={{
-          background: bgColor || 'var(--s1)',
+          background: bgColor || `var(--s1)`,
           border: '1px solid var(--br)',
           borderRadius: 12,
         }}
