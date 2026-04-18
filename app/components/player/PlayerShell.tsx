@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { Github } from 'lucide-react';
 import { PlayerProvider, usePlayer, formatTime } from '../../lib/playerContext';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useGaplessScheduler } from '../../lib/useGaplessScheduler';
@@ -202,6 +203,16 @@ function PlayerInner() {
             <span style={{ color: 'var(--a)', fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em' }}>
               LocalTune
             </span>
+            <a
+              href="https://github.com/Bhavye2003Developer/localTune"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Star on GitHub"
+              style={{ color: 'var(--t2)', display: 'flex', alignItems: 'center' }}
+              className="hover:text-[var(--t1)] transition-colors"
+            >
+              <Github size={15} />
+            </a>
           </div>
           <div className="shrink-0"><FileDropZone /></div>
           <TrackLibrary ref={searchRef} />
@@ -238,10 +249,19 @@ function PlayerInner() {
         {mobileTab === 'library' ? (
           <div className="flex-1 min-h-0 flex flex-col" style={{ background: 'var(--s1)' }}>
             <div
-              className="px-4 pt-4 pb-3 shrink-0"
+              className="px-4 pt-4 pb-3 shrink-0 flex items-center justify-between"
               style={{ borderBottom: '1px solid var(--br)' }}
             >
               <span style={{ color: 'var(--a)', fontSize: 15, fontWeight: 800 }}>LocalTune</span>
+              <a
+                href="https://github.com/Bhavye2003Developer/localTune"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Star on GitHub"
+                style={{ color: 'var(--t2)', display: 'flex', alignItems: 'center' }}
+              >
+                <Github size={15} />
+              </a>
             </div>
             <div className="shrink-0"><FileDropZone /></div>
             <TrackLibrary ref={searchRef} />
