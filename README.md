@@ -1,5 +1,7 @@
 # LocalTune
 
+[![GitHub](https://img.shields.io/github/stars/Bhavye2003Developer/localTune?style=social)](https://github.com/Bhavye2003Developer/localTune)
+
 A local-first browser media player. No accounts, no uploads, no servers. Your files never leave your device.
 
 Built on Web APIs - IndexedDB for storage, Web Audio API for the signal chain, HTMLAudioElement for playback. The entire app runs in the browser.
@@ -38,3 +40,9 @@ Next.js 16, React 19, TypeScript 5 (strict), Tailwind CSS 4, Dexie (IndexedDB), 
 One `AudioContext` per session, created on first user gesture. Audio nodes are built once and never torn down - bypasses go through `GainNode` gain rather than disconnect/reconnect, which avoids click artifacts. The seek bar and progress display run on `requestAnimationFrame`, not `timeupdate`.
 
 Files are stored as blobs in IndexedDB up to a 150 MB cap. On next session open, blob URLs are recreated from the stored data and ID3 tags are re-read for cover art.
+
+## Contributing
+
+GitHub: [Bhavye2003Developer/localTune](https://github.com/Bhavye2003Developer/localTune)
+
+If you find this useful, a star on GitHub goes a long way. Built with [Claude Code](https://claude.ai/code).
