@@ -6,7 +6,11 @@ import { usePlayer } from '../../lib/playerContext';
 
 const PRESETS = [15, 30, 45, 60];
 
-export function SleepTimer() {
+interface SleepTimerProps {
+  direction?: 'up' | 'down';
+}
+
+export function SleepTimer({ direction = 'up' }: SleepTimerProps) {
   const { state, togglePlay } = usePlayer();
   const [sleepEnd, setSleepEnd] = useState<number | null>(null);
   const [display, setDisplay] = useState('');
@@ -77,7 +81,7 @@ export function SleepTimer() {
 
       {open && (
         <div
-          className="absolute bottom-full right-0 mb-2 py-1 rounded-lg shadow-xl"
+          className={`absolute ${direction === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'} right-0 py-1 rounded-lg shadow-xl`}
           style={{ background: 'var(--s2)', border: '1px solid var(--br)', minWidth: 120, zIndex: 50 }}
         >
           {active && (

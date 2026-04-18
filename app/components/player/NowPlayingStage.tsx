@@ -109,7 +109,7 @@ export function NowPlayingStage() {
           <Chip>{fmtBytes(track.size)}</Chip>
           {track.duration > 0 && <Chip>{formatTime(track.duration)}</Chip>}
           <div className="sm:hidden">
-            <SleepTimer />
+            <SleepTimer direction="down" />
           </div>
         </div>
       </div>
