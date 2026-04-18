@@ -39,7 +39,7 @@ export interface StoredGaplessSettings {
   crossfade: number;    // 0–6 seconds
 }
 
-export class FineTuneDB extends Dexie {
+export class LocalTuneDB extends Dexie {
   tracks!: Table<StoredTrack>;
   eqPresets!: Table<EQPreset>;
   dspSettings!: Table<StoredDSPSettings>;
@@ -47,7 +47,7 @@ export class FineTuneDB extends Dexie {
   gaplessSettings!: Table<StoredGaplessSettings>;
 
   constructor() {
-    super('finetune_v1');
+    super('localtune_v1');
     this.version(1).stores({
       tracks:      '++id, fileId, name',
       eqPresets:   '++id, name',
@@ -83,4 +83,4 @@ export class FineTuneDB extends Dexie {
   }
 }
 
-export const db = new FineTuneDB();
+export const db = new LocalTuneDB();

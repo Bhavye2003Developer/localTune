@@ -200,7 +200,7 @@ function PlayerInner() {
             style={{ borderBottom: '1px solid var(--br)' }}
           >
             <span style={{ color: 'var(--a)', fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em' }}>
-              FineTune
+              LocalTune
             </span>
           </div>
           <div className="shrink-0"><FileDropZone /></div>
@@ -241,7 +241,7 @@ function PlayerInner() {
               className="px-4 pt-4 pb-3 shrink-0"
               style={{ borderBottom: '1px solid var(--br)' }}
             >
-              <span style={{ color: 'var(--a)', fontSize: 15, fontWeight: 800 }}>FineTune</span>
+              <span style={{ color: 'var(--a)', fontSize: 15, fontWeight: 800 }}>LocalTune</span>
             </div>
             <div className="shrink-0"><FileDropZone /></div>
             <TrackLibrary ref={searchRef} />

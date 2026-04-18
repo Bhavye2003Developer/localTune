@@ -10,7 +10,7 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "FineTune",
+  title: "LocalTune",
   description: "Local-first browser media player",
 };
 
