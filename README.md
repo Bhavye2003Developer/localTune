@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LocalTune
 
-## Getting Started
+A local-first browser media player. No accounts, no uploads, no servers. Your files never leave your device.
 
-First, run the development server:
+Built on Web APIs — IndexedDB for storage, Web Audio API for the signal chain, HTMLAudioElement for playback. The entire app runs in the browser.
+
+## Running locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What it does
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Drop audio files (or folders) into the app. They get indexed, persisted to IndexedDB, and are available the next time you open the browser. Everything plays offline.
 
-## Learn More
+**Playback** — play/pause, seek, next/prev, queue management, shuffle, loop modes (off / track / queue), variable speed (0.25x to 4x), gapless playback with crossfade.
 
-To learn more about Next.js, take a look at the following resources:
+**A-B loop** — set A and B markers on any track to loop a region. Markers are saved per track and restored when you come back.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**10-band EQ** — parametric equalizer with a live frequency response curve, draggable band dots, built-in presets, and custom preset save/load.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**DSP chain** — ReplayGain, bass engine, compressor, stereo widener, convolution reverb, brickwall limiter. Drag to reorder.
 
-## Deploy on Vercel
+**Queue** — add tracks, reorder by dragging, remove individually or clear all. Auto-advances on track end.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Next.js 16, React 19, TypeScript 5 (strict), Tailwind CSS 4, Dexie (IndexedDB), Web Audio API, Framer Motion.
+
+## Tech notes
+
+One `AudioContext` per session, created on first user gesture. Audio nodes are built once and never torn down — bypasses go through `GainNode` gain rather than disconnect/reconnect, which avoids click artifacts. The seek bar and progress display run on `requestAnimationFrame`, not `timeupdate`.
+
+Files are stored as blobs in IndexedDB up to a 150 MB cap. On next session open, blob URLs are recreated from the stored data and ID3 tags are re-read for cover art.
