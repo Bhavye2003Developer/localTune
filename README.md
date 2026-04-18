@@ -1,7 +1,5 @@
 # LocalTune
 
-[![GitHub](https://img.shields.io/github/stars/Bhavye2003Developer/localTune?style=social)](https://github.com/Bhavye2003Developer/localTune)
-
 A local-first browser media player. No accounts, no uploads, no servers. Your files never leave your device.
 
 Built on Web APIs - IndexedDB for storage, Web Audio API for the signal chain, HTMLAudioElement for playback. The entire app runs in the browser.
